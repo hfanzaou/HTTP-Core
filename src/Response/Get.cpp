@@ -43,10 +43,10 @@ void Get::generate_response()
 		throw std::runtime_error("kda");
 	this->_content_length = bodyfile.tellg();
    	bodyfile.seekg(0, std::ios::beg);
-	std::cout << "--- :" << this->_content_length << std::endl;
 	std::vector<char> vec(this->_content_length);
 	bodyfile.read(&vec[0], this->_content_length);
-	this->_head = "HTTP/1.1 200 OK\r\nContent-Type: image/png\nContent-Length: " + std::to_string(vec.size()) + "\n\r\n";
+	std::cout << "--- :" << vec.size() << std::endl;
+	this->_head = "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: " + std::to_string(vec.size()) + "\r\n\r\n";
 	this->_body = vec;
 	//this->_content_length += this->_head.length();
 

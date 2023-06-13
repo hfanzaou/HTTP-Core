@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 22:12:15 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/06/11 01:26:10 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/06/09 20:33:44 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,6 +16,5 @@ int	main(void)
 {
 	Socket	server;
 
-	if(!server.start_server())
-		return (1);
+	server.start_server();
 }

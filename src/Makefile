@@ -6,14 +6,16 @@
 #    By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/06/09 22:12:40 by ebensalt          #+#    #+#              #
-#    Updated: 2023/06/13 03:19:31 by hfanzaou         ###   ########.fr        #
+#    Updated: 2023/06/13 04:23:23 by hfanzaou         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME		= webserv
 CPP			= Socket/main.cpp \
 			  Socket/Socket.cpp \
-			  Socket/Get.cpp Socket/Response.cpp
+			  Request/Request.cpp \
+			  Response/Get.cpp \
+			  Response/Response.cpp
 CC			= c++
 CPPFLAGS	= -Wall -Wextra -Werror -std=c++98
 O			= $(CPP:.cpp=.o)

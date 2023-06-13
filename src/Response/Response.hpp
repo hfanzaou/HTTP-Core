@@ -23,7 +23,7 @@ class Response {
 		const 	std::map<std::string, std::map<std::string, std::string> >&	get_Routes() const;
 		size_t get_len() const;
 		const	std::string& get_head() const;
-		const std::vector<char>& get_body() const;
+		const	std::vector<char>& get_body() const;
 };
 
 #endif
