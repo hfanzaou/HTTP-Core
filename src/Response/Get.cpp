@@ -5,7 +5,7 @@ Get::Get() : Response()
 	//std::cout << "Default Constructor called" << std::endl;
 }
 
-Get::Get(const std::map<std::string, std::map<std::string, std::string> >& Routes) : Response(Routes)
+Get::Get(const ServerConfig& config) : Response(config)
 {
 	//std::cout << "Constructor called" << std::endl;
 }
@@ -20,7 +20,7 @@ Get& Get::operator=(const Get& obj)
 {
 	//std::cout << "Copy assignement constructor called" << std::endl;
 	if (this != &obj)
-		this->set_Routes(obj.get_Routes());
+		this->set_servconfig(obj.get_servconfig());
 	return (*this);
 }
 
@@ -34,22 +34,62 @@ void	Get::handle_request()
 	
 }
 
+// std::string res_error(int i, const std::string[7]& errors)
+// {
+// 	std::string error("errors/"+ errors[i]);
+// 	std::ifstream errorf(error.c_str(), std::ios::ate);
+// 	size_t len = errorf.tellg();
+// 	errorf.seekg(0, std::ios::beg);
+// 	char *buff = new char[len];
+// 	errorf.read(buff, len);
+// 	std::string error(buff);
+// 	return (error);
+// }
+
+
 void Get::generate_response()
 {
-	std::string location = "index.html";
-	std::string location2 = "1.png";
-	std::ifstream bodyfile(location2.c_str(), std::ios::binary | std::ios::ate);
+	//std::string errors[7] = {"404, 301, 403, 500, 409, 204, 201"};
+	try 
+	{
+		this->match_method();
+		//std::cout << this->req_path << std::endl;
+		this->handle();
+	}
+	catch(int err)
+	{
+		//std::cout << e.what() << std::endl;
+		std::string error(this->generate_error(err));
+		std::string error_page = "<!DOCTYPE html><html><body><center><h1>ERROR</h1><h1><font size=\"100\">" 
+		+ error.substr(0, 3) + "</font></h1><h1>" + error.substr(3, error.length()) + "</h1></center></body></html>";
+		this->_head = "HTTP/1.1 " + error.substr(0, 3) + "\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string(error_page.size()) + "\r\n\r\n";
+		this->res = this->_head + error_page;
+	}
+}
+
+void Get::handle()
+{
+	// std::string location = "";
+	// std::string location2 = "error.html";
+	// std::string location3 = "20MIN.mp4";
+	DIR *dir = opendir(this->req_path.c_str());
+	if (dir)
+	{
+		if (this->req_path.at(this->req_path.length() - 1) != '/')
+			throw 301;
+	}
+	std::ifstream bodyfile(this->req_path, std::ios::binary | std::ios::ate);
 	if (!bodyfile.is_open())
-		throw std::runtime_error("kda");
+		throw 404;
 	this->_content_length = bodyfile.tellg();
    	bodyfile.seekg(0, std::ios::beg);
 	std::vector<char> vec(this->_content_length);
 	bodyfile.read(&vec[0], this->_content_length);
-	std::cout << "--- :" << vec.size() << std::endl;
+	//std::cout << "--- :" << vec.size() << std::endl;
 	this->_head = "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: " + std::to_string(vec.size()) + "\r\n\r\n";
+	//std::vector<char> vec2(this->_head.c_str());
+	std::string res(vec.begin(), vec.end());
+	res = this->_head + res;
+	this->res = res;
 	this->_body = vec;
-	//this->_content_length += this->_head.length();
-
-	//buff[this->_content_length - head.length()] = '\0';
-	//std::cout << res << std::endl;
 }

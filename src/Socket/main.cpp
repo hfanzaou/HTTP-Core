@@ -3,18 +3,27 @@
 /*                                                        :::      ::::::::   */
 /*   main.cpp                                           :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 22:12:15 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/06/09 20:33:44 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/06/23 01:47:14 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Socket.hpp"
-
-int	main(void)
+#include "../config/ConfigParse/Config.hpp"
+int	main(int ac, char **av)
 {
+	(void)ac;
 	Socket	server;
-
-	server.start_server();
+	try {
+		Config	config(av[1]);
+		config.parse();
+		config.printServers();
+		server.start_server(config.getServers().at(0));
+	}
+	catch (std::exception &e)
+	{
+		std::cerr << e.what() << std::endl;
+	}
 }

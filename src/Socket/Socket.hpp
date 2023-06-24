@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Socket.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 16:03:36 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/06/11 20:59:38 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/06/22 23:40:58 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -19,6 +19,7 @@
 # include <fcntl.h>
 # include <sys/select.h>
 # include "../Request/Request.hpp"
+# include "../config/ConfigParse/Config.hpp"
 # include <vector>
 
 class Socket
@@ -46,7 +47,7 @@ class Socket
 
 		Socket	&operator=(const Socket &o);
 
-		bool	start_server(void);
+		bool	start_server(ServerConfig config);
 		bool	ft_errors(void);
 		void	add_req(int f);
 		void	rmv_req(int f);

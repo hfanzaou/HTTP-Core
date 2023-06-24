@@ -6,12 +6,12 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 16:03:40 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/06/13 04:16:43 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/06/22 23:40:57 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Socket.hpp"
-#include "../Get.hpp"
+#include "../Response/Get.hpp"
 Socket::Socket(void)
 {
 	hostname = "127.0.0.1";
@@ -53,11 +53,11 @@ Socket	&Socket::operator=(const Socket &o)
 	return (*this);
 }
 
-bool	Socket::start_server(void)
+bool	Socket::start_server(ServerConfig config)
 {
 	int	opt_va = 1;
 	int	opt_va_len = sizeof(opt_va);
-	Get response;
+	Get response(config);
 	if (getaddrinfo(hostname.c_str(), servname.c_str(), &hints, &res))
 		return (ft_errors());
 	if ((sock_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1)
@@ -72,6 +72,8 @@ bool	Socket::start_server(void)
 		return (ft_errors());
 	set_max = sock_fd + 1;
 	FD_SET(sock_fd, &main);
+	int l = 0;
+	response.generate_response();
 	while (1)
 	{
 		read = main;
@@ -85,33 +87,38 @@ bool	Socket::start_server(void)
 					if ((acpt_fd = accept(sock_fd, (sockaddr *)&acpt_addr, (socklen_t *)&acpt_addr_len)) == -1)
 						return (ft_errors());
 					FD_SET(acpt_fd, &main);
+					std::cout << "accept fds = " << acpt_fd << std::endl;
 					if (acpt_fd > set_max - 1)
 						set_max = acpt_fd + 1;
 					break ;
 				}
 				else
 				{
-					while (recv(i, buff, 1, 0) == 1)
+					while (0 && recv(i, buff, 1, 0) == 1)
 					{
 						buff[1] = 0;
 						req_str = req_str + buff;
 					}
-					add_req(i);
-					req_str.clear();
+					//add_req(i);
+					//req_str.clear();
 					write = main;
 					select(set_max, NULL, &write, NULL, NULL);
-					for (int j = 0; j < set_max; j++)
+					for (int j = 3; j < set_max; j++)
 					{
 						if (FD_ISSET(j, &write))
 						{
 							// std::cout << j << std::endl;
-							response.generate_response();
-					//std::cout << write << std::endl;
-							send(j, response.get_head().c_str(), response.get_head().length(), 0);
-							std::vector<char> res = response.get_body();
-							send(j, &res[0], res.size(), 0);
-							close(j);
-							FD_CLR(j, &main);
+							//std::cout << write << std::endl;
+							//int  size = 1024;
+							//std::cout << response.get_res() << std::endl;
+							l = send(j, response.get_res().c_str(), response.get_res().size(), 0);
+							//std::cout << "fd = " << j << " send = " << l << " image = " << response.get_res().size() << std::endl;
+							std::string &res = response.get_res();
+							res = res.substr(l);
+							// std::vector<char> res = response.get_body();
+							// send(j, &res[0], res.size(), 0);
+							//close(j);
+							//FD_CLR(j, &main);
 							rmv_req(j);
 							// for (unsigned int i = 0; i < req.size(); i++)
 							// 	req[i].print_req();
