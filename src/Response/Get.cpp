@@ -52,18 +52,14 @@ void Get::generate_response()
 	//std::string errors[7] = {"404, 301, 403, 500, 409, 204, 201"};
 	try 
 	{
-		this->match_method();
+		this->match_method(int fd);
 		//std::cout << this->req_path << std::endl;
 		this->handle();
 	}
 	catch(int err)
 	{
 		//std::cout << e.what() << std::endl;
-		std::string error(this->generate_error(err));
-		std::string error_page = "<!DOCTYPE html><html><body><center><h1>ERROR</h1><h1><font size=\"100\">" 
-		+ error.substr(0, 3) + "</font></h1><h1>" + error.substr(3, error.length()) + "</h1></center></body></html>";
-		this->_head = "HTTP/1.1 " + error.substr(0, 3) + "\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string(error_page.size()) + "\r\n\r\n";
-		this->res = this->_head + error_page;
+		this->handle_err(err);
 	}
 }
 
@@ -89,7 +85,6 @@ void Get::handle()
 	this->_head = "HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: " + std::to_string(vec.size()) + "\r\n\r\n";
 	//std::vector<char> vec2(this->_head.c_str());
 	std::string res(vec.begin(), vec.end());
-	res = this->_head + res;
-	this->res = res;
-	this->_body = vec;
+	this->res = this->_head + res;
+	//this->_body = vec;
 }

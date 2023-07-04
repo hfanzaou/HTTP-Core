@@ -4,14 +4,11 @@ server
     port 8080
     server_name example localhost
     max_body_size 1000000000
-    error_page 400 root/error/error400.html
-    error_page 404 root/error/error404.html
 
     location / {
         methods GET POST
         root srcs/
-        autoindex off
-        index index.html
+        autoindex on
     }
 
     location /vid
@@ -30,8 +27,6 @@ server {
     port 8080
     server_name www.example.com example.com
     max_body_size 1000000000
-    error_page 400 root/error/error400.html
-    error_page 404 root/error/error404.html
 
 	location /
     {
@@ -50,4 +45,5 @@ server {
         index index.html
     }
 }
+
 
