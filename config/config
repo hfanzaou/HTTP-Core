@@ -1,0 +1,53 @@
+server
+{
+    host 127.0.0.1
+    port 8080
+    server_name example localhost
+    max_body_size 1000000000
+    error_page 400 root/error/error400.html
+    error_page 404 root/error/error404.html
+
+    location / {
+        methods GET POST
+        root srcs/
+        autoindex off
+        index index.html
+    }
+
+    location /vid
+    {
+        methods POST GET DELETE
+        index index.html
+        root root/
+        autoindex on
+    }
+
+	location /loc
+}
+
+server {
+	host 127.0.0.1
+    port 8080
+    server_name www.example.com example.com
+    max_body_size 1000000000
+    error_page 400 root/error/error400.html
+    error_page 404 root/error/error404.html
+
+	location /
+    {
+        methods GET POST DELETE
+        index index.html
+        autoindex on
+        root root/cgi-bin
+    }
+
+
+    location /loc
+    {
+        methods GET POST
+        root root/private
+        autoindex on
+        index index.html
+    }
+}
+
