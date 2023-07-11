@@ -3,7 +3,7 @@
 std::ifstream Response::_file(nullptr);
 
 Response::Response(request req, const ServerConfig& config) : _req(req), _config(config), 
-	_headers_status(false), _body_status(false), auto_index(false), Allow_method(false), _dir(NULL)
+	_headers_status(false), _body_status(false), auto_index(false), _fd(req.get_fd()) , Allow_method(false), _dir(NULL)
 {
 	//std::cout << _req << std::endl;
 	req_uri = _req.get_uri();
@@ -11,6 +11,7 @@ Response::Response(request req, const ServerConfig& config) : _req(req), _config
 	_method = _req.get_method();
 	status_code = _req.get_status_code();
 	std::cout << "*****" << status_code << std::endl;
+	c = 0;
 	//this->_res = "";
 	//std::cout << "Constructor called" << std::endl;
 }
@@ -182,7 +183,10 @@ void	Response::match()
 		if (this->_method == "DELETE")
 		{
 			if (_dir && this->req_uri.at(this->req_uri.length() - 1) != '/')
+			{
+				closedir(_dir);
 				throw 301;
+			}	
 			return ;
 		}
 		
@@ -214,7 +218,8 @@ void	Response::match()
 			}
 			closedir(_dir);
 		}
-		_file.close();
+		if (_file.is_open())
+			_file.close();
 		_file.open(this->req_uri, std::ios::binary | std::ios::ate);
 		std::cout << "file open =" << this->req_uri << std::endl;
 		if (!_file.is_open())
@@ -258,7 +263,7 @@ void Response::generate_response()
 	}
 	catch(int err)
 	{
-		_file.close();
+		//_file.close();
 		_req.set_status_code(err);
 		std::cout << "catch" << std::endl;
 		_headers_status = true;
@@ -360,24 +365,29 @@ void	Response::handle_get()
 	}
 	if (_body_status == false)
 	{
-		int l = 255;
-		if (this->_content_length < 255)
+		int l = 1024;
+		if (this->_content_length < l)
 		{
 			l = this->_content_length;	
 		}
-		else if (this->_content_length - _file.tellg() < 255)
+		else if (this->_content_length - _file.tellg() < l)
 		{
-			std::cout << this->_content_length << " " << _file.tellg() << std::endl;
+			//std::cout << this->_content_length << " " << _file.tellg() << std::endl;
 			l = this->_content_length - _file.tellg();
+			//std::cout << "changing l = " << _file.tellg();
 		}
-		std::cout << "9bl " << l << std::endl;
+		c += 1024;
+		//std::cout << "9bl " << l << std::endl;
 		std::vector<char> vec(l);
 		_file.read(&vec[0], l);
 		std::string res(vec.begin(), vec.end());
-		std::cout << "b3d" << std::endl;
+		//std::cout << "b3d" << std::endl;
 		this->_res = res;
-		if (l < 255 || _file.eof())
+		if (_file.eof() || l < 1024)
 		{
+			std::cout << _fd << " in video" << "c =" << c << std::endl;
+			std::cout << l << std::endl;
+			std::cout << this->req_uri << " finished" << _file.tellg() << std::endl; 
 			std::cout << "hatim l7imari + lmhidi l7imari" << std::endl; 
 			this->_body_status = true;
 			_file.close();

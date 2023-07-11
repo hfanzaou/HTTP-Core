@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:46 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/10 10:22:04 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/11 09:01:15 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -120,8 +120,7 @@ void	server::multiplex_server(ServerConfig& config)
 				{
 					if (read_server(i))
 					{
-						if (this->response.find(i) == this->response.end())
-							this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], config)));	
+							
 						// std::cout << "ok" << std::endl;
 						FD_SET(i, &write);
 						// FD_CLR(i, &read);
@@ -130,6 +129,8 @@ void	server::multiplex_server(ServerConfig& config)
 			}
 			else if (FD_ISSET(i, &tmp_w))
 			{
+				if (this->response.find(i) == this->response.end())
+					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], config)));
 				// std::cout << "ok" << std::endl;
 				FD_CLR(i, &read);
 				write_server(i);
