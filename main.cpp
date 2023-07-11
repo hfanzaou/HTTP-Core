@@ -16,16 +16,16 @@ int	main(int ac, char **av)
 		return (0);
 	}
 	server	server;
-	try {
+	//try {
 		Config	config(av[1]);
 		config.parse();
 		config.printServers();
 		server.init_server();
 		server.start_server();
 		server.multiplex_server(config.getServers().at(0));
-	}
-	catch (std::exception &e)
-	{
-		std::cerr << e.what() << std::endl;
-	}
+	// }
+	// catch (std::exception &e)
+	// {
+	// 	std::cerr << e.what() << std::endl;
+	// }
 }

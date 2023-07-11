@@ -6,21 +6,21 @@
 #include <sstream>
 #include <fstream>
 #include "../request/request.hpp"
-#include "../config/ConfigParse/Config.hpp"
+#include "../ConfigParse/Config.hpp"
 #include <dirent.h>
 #include <utility>
 #include <cstdio>
 
 class Response {
 	protected :
-		request *_req;
+		request _req;
 		ServerConfig _config;
 		std::string req_uri;
 		std::string _method;
 		int status_code;
 		bool _headers_status;
 		bool _body_status;
-		bool _dir;
+		//bool _dir;
 		bool auto_index;
 		std::string index;
 		int _fd;
@@ -28,13 +28,14 @@ class Response {
 		std::string _body;
 		std::string _res;
 		static std::ifstream _file;
+		bool Allow_method;
+		DIR *_dir;
 		size_t _pos;
 		std::map<int, std::pair<std::ifstream, size_t> > _client;
 		std::ifstream::pos_type _content_length;
 		size_t _head_len;
 	public :
-		Response();
-		Response(request*, const ServerConfig&);
+		Response(request, const ServerConfig&);
 		Response(const Response& );
 		virtual ~Response();
 		Response& operator=(const Response& );
@@ -50,7 +51,8 @@ class Response {
 		void		match();
 		void		match_fd();
 		void		handle_err(int err);
-		void		handle();
+		void		handle_get();
+		void		handle_delete(DIR* dir, std::string rq);
 		void		check_method(const std::vector<std::string>& methods);
 		void		index_dir(DIR *dir, std::string& path);
 		std::string set_head();

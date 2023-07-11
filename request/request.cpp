@@ -6,22 +6,24 @@
 /*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/15 21:05:41 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/06/26 11:20:41 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/07/05 02:15:05 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "request.hpp"
 
-request::request(void)
+request::request(int i)
 {
 	msg = "OK";
 	status_code = 200;
+	fd = i;
+	req_l = false;
+	req_h = false;
+	req_b = true;
+	// std::cout << fd << std::endl;
 }
 
-request::~request(void)
-{
-	// std::cout << "request deleted" << std::endl;
-}
+request::~request(void) {}
 
 void	request::set_method(std::string &m)
 {
@@ -64,4 +66,59 @@ void	request::print_all(void)
 	for (std::map<std::string, std::string>::iterator i = header.begin(); i != header.end(); i++)
 		std::cout << i->first << " = " << i->second << std::endl;
 	std::cout << "}" << std::endl;
+}
+
+int	request::get_fd(void)
+{
+	return (fd);
+}
+
+bool	request::get_req_l(void)
+{
+	return (req_l);
+}
+
+bool	request::get_req_h(void)
+{
+	return (req_h);
+}
+
+bool	request::get_req_b(void)
+{
+	return (req_b);
+}
+
+void	request::set_req_l(bool r)
+{
+	req_l = r;
+}
+
+void	request::set_req_h(bool r)
+{
+	req_h = r;
+}
+
+void	request::set_req_b(bool r)
+{
+	req_b = r;
+}
+
+std::map<std::string, std::string>	&request::get_header(void)
+{
+	return (header);
+}
+
+std::string	&request::get_read_line(void)
+{
+	return (read_line);
+}
+
+void	request::set_read_line(std::string r)
+{
+	read_line = r;
+}
+
+void	request::add_to_read_line(char *b)
+{
+	read_line += b;
 }
