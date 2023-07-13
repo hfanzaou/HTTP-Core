@@ -27,7 +27,7 @@ class Response {
 		std::string _head;
 		std::string _body;
 		std::string _res;
-		static std::ifstream _file;
+		std::ifstream _file;
 		bool Allow_method;
 		DIR *_dir;
 		size_t _pos;
@@ -56,6 +56,7 @@ class Response {
 		void		handle_delete(DIR* dir, std::string rq);
 		void		check_method(const std::vector<std::string>& methods);
 		void		index_dir(DIR *dir, std::string& path);
+		//static void open(const );
 		std::string set_head();
 		std::ifstream& get_file();
 };

@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/15 21:05:30 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/12 23:16:14 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/13 13:43:05 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -59,8 +59,9 @@ class request
 		void								set_read_line(std::string r);
 		void								add_to_read_line(char *b);
 		std::string							&get_method(void);
-		std::string							get_uri();
+		std::string							&get_uri();
 		int 								get_status_code();
+		std::string							&get_host();
 };
 
 #endif

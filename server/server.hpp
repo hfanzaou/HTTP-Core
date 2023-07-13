@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:59 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/13 03:29:38 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/13 13:53:07 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -70,6 +70,7 @@ class server
 		void		post(int fd);
 		void		drop_client(int i);
 		void		add_req(int s);
+		ServerConfig get_config(std::string &host);
 		// void		init_fd_set(void);
 };
 

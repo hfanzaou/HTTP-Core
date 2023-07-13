@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:46 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/13 03:47:53 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/13 13:52:53 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -55,6 +55,7 @@ void	server::start_server(void)
 		std::cerr << "Error : socket!" << std::endl;
 		return ;
 	}
+	signal(SIGPIPE, SIG_IGN);
 	if (fcntl(s, F_SETFL, O_NONBLOCK) == -1)
 	{
 		std::cerr << "Error : fcntl!" << std::endl;
@@ -127,8 +128,12 @@ void	server::multiplex_server(void)
 			}
 			else if (FD_ISSET(i, &tmp_w))
 			{
+				
 				if (this->response.find(i) == this->response.end())
-					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], config.getServers()[0])));
+				{
+					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
+					//reqs[find_req(i)].print_all();
+				}
 				write_server(i);
 			}
 		}
@@ -155,6 +160,7 @@ bool	server::read_server(int i)
 		drop_client(i);
 		return (false);
 	}
+	//std::cout << buff << std::endl;
 	if (reqs[find_req(i)].get_req_l() && reqs[find_req(i)].get_req_h() && reqs[find_req(i)].get_req_b())
 		return (false);
 	if (!reqs[find_req(i)].get_req_h())
@@ -374,4 +380,16 @@ void	server::add_req(int s)
 			break ;
 		}
 	}
+}
+
+ServerConfig server::get_config(std::string &host)
+{
+	std::vector<ServerConfig> configs = config.getServers();
+	for (std::vector<ServerConfig>::iterator it = configs.begin(); it != configs.end(); ++it)
+	{
+		std::cout << "host = " << host << " it->getHost() = " << it->getHost() << std::endl;
+		if (host == it->getHost() + ":" + it->getPort())
+			return (*it);
+	}
+	return (config.getServers()[0]);
 }

@@ -10,8 +10,7 @@ server
     location / {
         methods GET POST
         root srcs/
-        autoindex off
-        index index1.html
+        autoindex on
     }
 
     location /vid
