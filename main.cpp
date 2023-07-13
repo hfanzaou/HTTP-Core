@@ -1,31 +1,25 @@
 #include "server/server.hpp"
 
-// int	main(void)
-// {
-// 	server	server;
-
-// 	server.init_server();
-// 	server.start_server();
-// 	server.multiplex_server();
-// }
-
-int	main(int ac, char **av)
+int main(int ac, char **av)
 {
-	if (ac < 2)
+	if (ac != 2)
+		return (1);
+	try
 	{
-		return (0);
-	}
-	server	server;
-	//try {
-		Config	config(av[1]);
+    	Config	config(av[1]);
+		server	server(config);
+
 		config.parse();
-		config.printServers();
-		server.init_server();
-		server.start_server();
-		server.multiplex_server(config.getServers().at(0));
-	// }
-	// catch (std::exception &e)
-	// {
-	// 	std::cerr << e.what() << std::endl;
-	// }
+		for (size_t i = 0; i < config.getServers().size(); i++)
+		{
+			// std::cout << "ok" << std::endl;
+			server.init_server(config.getServers()[i]);
+			server.start_server();
+		}
+		server.multiplex_server();
+	}
+	catch (std::exception &e)
+	{
+		std::cout << e.what() << std::endl;
+	}
 }

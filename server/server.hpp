@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:59 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/05 17:14:34 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/13 03:29:38 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -23,44 +23,40 @@
 # include <fstream>
 # include <cctype>
 # include <algorithm>
-#include "../ConfigParse/Config.hpp"
-#include "../Response/Response.hpp"
+# include "../ConfigParse/Config.hpp"
+# include "../Response/Response.hpp"
+# include "Socket.hpp"
 
 class server
 {
 	private	:
-		// Config					config;
-		std::string				hostname;
-		std::string				servname;
-		struct addrinfo			hints;
-		struct addrinfo			*res;
-		int						sock_fd;
-		int						option_value;
-		int						option_len;
-		struct sockaddr_storage	acpt_addr;
-		int						acpt_len;
-		int						acpt_fd;
-		char					buff[102400];
-		// char					buff
-		fd_set					read;
-		fd_set					write;
-		int						nfds;
-		// std::string				read_line;
-		// request					*req;
-		std::vector<request>	reqs;
-		// bool					req_l;
-		// bool					req_h;
-		// bool					req_b;
-		// int						body_len;
-		int						read_len;
+		std::string					hostname;
+		std::string					servname;
+		std::vector<std::string>	name;
+		struct addrinfo				hints;
+		struct addrinfo				*res;
+		std::vector<int>			sock_fd;
+		std::vector<Socket>			serv;
+		int							option_value;
+		int							option_len;
+		struct sockaddr_storage		acpt_addr;
+		int							acpt_len;
+		int							acpt_fd;
+		char						buff[1024];
+		fd_set						read;
+		fd_set						write;
+		int							nfds;
+		std::vector<request>		reqs;
+		int							read_len;
+		Config						&config;
 		std::map<int, Response*> response;
 	public	:
-		// server(Config c);
+		server(Config &c);
 
-		void		init_server(void);
+		void		init_server(ServerConfig &s);
 		void		start_server(void);
-		void		multiplex_server(ServerConfig& config);
-		void		accept_server(void);
+		void		multiplex_server(void);
+		void		accept_server(int s);
 		bool		read_server(int i);
 		void		write_server(int i);
 		bool		parse_req(int i);
@@ -72,6 +68,9 @@ class server
 		int			find_req(int i);
 		void		erase_req(int i);
 		void		post(int fd);
+		void		drop_client(int i);
+		void		add_req(int s);
+		// void		init_fd_set(void);
 };
 
 #endif

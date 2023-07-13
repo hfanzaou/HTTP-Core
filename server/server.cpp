@@ -6,18 +6,29 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:46 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/11 09:01:15 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/13 03:47:53 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "server.hpp"
 
-// server::server(Config c) : config(c) {}
-
-void	server::init_server(void)
+server::server(Config &c) : config(c)
 {
-	hostname = "127.0.0.1";
-	servname = "8080";
+	// for (std::vector<ServerConfig>::iterator it = config.getServers().begin(); it != config.getServers().end(); it++)
+	// {
+
+	// }
+	FD_ZERO(&read);
+	FD_ZERO(&write);
+}
+
+void	server::init_server(ServerConfig &s)
+{
+	(void)config;
+	// hostname = "127.0.0.1";
+	hostname = s.getHost();
+	// servname = "8080";
+	servname = s.getPort();
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_STREAM;
@@ -25,68 +36,58 @@ void	server::init_server(void)
 	option_len = sizeof(option_value);
 	memset(&acpt_addr, 0, sizeof(acpt_addr));
 	acpt_len = sizeof(acpt_addr);
-	FD_ZERO(&read);
-	FD_ZERO(&write);
-	// req_l = false;
-	// req_h = false;
-	// req_b = true;
-	// body_len = 0;
-	// hostname = config.getServers()[0].getHost();
-	// servname = "8080";
-	// memset(&hints, 0, sizeof(hints));
-	// hints.ai_family = AF_INET;
-	// hints.ai_socktype = SOCK_STREAM;
-	// option_value = 1;
-	// option_len = sizeof(option_value);
-	// memset(&acpt_addr, 0, sizeof(acpt_addr));
-	// acpt_len = sizeof(acpt_addr);
+	name = s.getServerNames();
 	// FD_ZERO(&read);
 	// FD_ZERO(&write);
-	// req_l = false;
-	// req_h = false;
-	// req_b = true;
 }
 
 void	server::start_server(void)
 {
+	int	s;
+
 	if (getaddrinfo(hostname.c_str(), servname.c_str(), &hints, &res))
 	{
 		std::cerr << "Error : getaddrinfo!" << std::endl;
 		return ;
 	}
-	if ((sock_fd = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1)
+	if ((s = socket(res->ai_family, res->ai_socktype, res->ai_protocol)) == -1)
 	{
 		std::cerr << "Error : socket!" << std::endl;
 		return ;
 	}
-	signal(SIGPIPE, SIG_IGN);
-	if (fcntl(sock_fd, F_SETFL, O_NONBLOCK) == -1)
+	if (fcntl(s, F_SETFL, O_NONBLOCK) == -1)
 	{
 		std::cerr << "Error : fcntl!" << std::endl;
 		return ;
 	}
-	if (setsockopt(sock_fd, SOL_SOCKET, SO_REUSEADDR, &option_value, (socklen_t)option_len))
+	if (setsockopt(s, SOL_SOCKET, SO_REUSEADDR, &option_value, (socklen_t)option_len))
 	{
 		std::cerr << "Error : setsockopt!" << std::endl;
 		return ;
 	}
-	if (bind(sock_fd, res->ai_addr, res->ai_addrlen))
+	if (bind(s, res->ai_addr, res->ai_addrlen))
 	{
-		std::cerr << "Error : bind!" << std::endl;
+		// std::cerr << "Error : bind!" << std::endl;
 		return ;
 	}
 	freeaddrinfo(res);
-	if (listen(sock_fd, 10))
+	if (listen(s, 10))
 	{
 		std::cerr << "Error : listen!" << std::endl;
 		return ;
 	}
-	FD_SET(sock_fd, &read);
-	FD_SET(sock_fd, &write);
-	nfds = sock_fd;
+	std::cout << "\033[1;31mSERVER " << hostname << ":" << servname << " IS LISTENING" << "\033[0m" << std::endl;
+	FD_SET(s, &read);
+	FD_SET(s, &write);
+	if (nfds < s)
+		nfds = s;
+	sock_fd.push_back(s);
+	std::string	tmp = hostname + ":" + servname;
+
+	serv.push_back(Socket(s, tmp));
 }
 
-void	server::multiplex_server(ServerConfig& config)
+void	server::multiplex_server(void)
 {
 	fd_set	tmp_r;
 	fd_set	tmp_w;
@@ -109,106 +110,93 @@ void	server::multiplex_server(ServerConfig& config)
 		{
 			if (FD_ISSET(i, &tmp_r))
 			{
-				if (i == sock_fd)
+				size_t it = 0;
+				for (; it < sock_fd.size(); it++)
 				{
-					accept_server();
-					FD_SET(acpt_fd, &read);
-					if (acpt_fd > nfds)
-						nfds = acpt_fd;
-				}
-				else
-				{
-					if (read_server(i))
+					if (i == sock_fd[it])
 					{
-							
-						// std::cout << "ok" << std::endl;
-						FD_SET(i, &write);
-						// FD_CLR(i, &read);
+						accept_server(sock_fd[it]);
+						FD_SET(acpt_fd, &read);
+						if (acpt_fd > nfds)
+							nfds = acpt_fd;
+						break ;
 					}
 				}
+				if (it == sock_fd.size() && read_server(i))
+					FD_SET(i, &write);
 			}
 			else if (FD_ISSET(i, &tmp_w))
 			{
 				if (this->response.find(i) == this->response.end())
-					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], config)));
-				// std::cout << "ok" << std::endl;
-				FD_CLR(i, &read);
+					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], config.getServers()[0])));
 				write_server(i);
-				// FD_CLR(i, &write);
 			}
 		}
 	}
 }
 
-void	server::accept_server(void)
+void	server::accept_server(int s)
 {
 	std::cout << "\033[1;32mNEW CONECTION\033[0m" << std::endl;
-	if ((acpt_fd = accept(sock_fd, (sockaddr *)&acpt_addr, (socklen_t *)&acpt_len)) == -1)
+	if ((acpt_fd = accept(s, (sockaddr *)&acpt_addr, (socklen_t *)&acpt_len)) == -1)
 	{
 		std::cerr << "Error : accept!" << std::endl;
 		return ;
 	}
-	reqs.push_back(request(acpt_fd));
-	// req = new request(acpt_fd);
+	std::cout << acpt_fd << std::endl;
+	add_req(s);
 }
 
 bool	server::read_server(int i)
 {
-	// buff = new char[10240];
-	if ((read_len = recv(i, buff, 102400, 0)) < 1)
+	if ((read_len = recv(i, buff, 1024, 0)) < 1)
 	{
 		std::cerr << "Error : recv!" << std::endl;
+		drop_client(i);
 		return (false);
 	}
-	// std::cout << buff << std::endl;
-	// buff[j] = 0;
-	// read_line += buff;
-	reqs[find_req(i)].add_to_read_line(buff);
-	// if (body_len > 0)
-	// 	body_len -= j;
-	// if (!find_req(i))
-	// {
-		// std::copy(buff, buff + read_len, std::back_inserter(reqs[find_req(i)].get_read_line()));
-		return (parse_req(i));
-	// // }
-	// else
-	// 	return (false);
+	if (reqs[find_req(i)].get_req_l() && reqs[find_req(i)].get_req_h() && reqs[find_req(i)].get_req_b())
+		return (false);
+	if (!reqs[find_req(i)].get_req_h())
+		reqs[find_req(i)].add_to_read_line(buff);
+	return (parse_req(i));
 }
 
 void	server::write_server(int i)
 {
-	response[i]->generate_response();
-	std::string res = response[i]->get_res();
-	if (!res.empty())
-	{
+	// while (!response[i]->get_send_status())
+	// {
+		response[i]->generate_response();
+		std::string res = response[i]->get_res();
 		//std::cout << res << std::endl;
 		if (send(i, res.c_str(), res.size(), 0) == -1)
 		{
 			//std::cout << "mehdi l7imar " << std::endl; 
-			//std::cerr << "Error : send!" << std::endl;
+				std::cerr << "Error : send!" << std::endl;
 			return ;
 		}
-	}
+	// }
 	if (response[i]->get_send_status())
 	{
 		// std::cout << "lmhidi l7imari" << std::endl;
  		delete response[i];
 		response.erase(i);
-		erase_req(i);
-		FD_CLR(i, &write);
+		// erase_req(i);
 		//delete req;
-		close(i);
+		//close(i);
+		//reqs[find_req(i)].print_all();
+		// std::cout << "this fd is droped = " << reqs[find_req(i)].get_fd() << std::endl;
+		drop_client(i);
 	}
-	//std::cout << "fga" << std::endl;
-	// std::cout << "ok" << std::endl;
 }
 
 bool	server::parse_req(int i)
 {
-	std::string	read_line = reqs[find_req(i)].get_read_line();
-	if (read_line.find("\r\n") == std::string::npos && (!reqs[find_req(i)].get_req_l() || !reqs[find_req(i)].get_req_h()))
+	if (!reqs[find_req(i)].get_req_h())
 	{
-		return (false);
+		std::string	read_line = reqs[find_req(i)].get_read_line();
+		if (read_line.find("\r\n") == std::string::npos && (!reqs[find_req(i)].get_req_l() || !reqs[find_req(i)].get_req_h()))
+			return (false);
 	}
 	if (!reqs[find_req(i)].get_req_l())
 		parse_req_line(i);
@@ -216,26 +204,13 @@ bool	server::parse_req(int i)
 		parse_header(i);
 	if (!reqs[find_req(i)].get_req_b())
 		post(i);
-	// std::cout << req_l << " " << req_h << " " << req_b << " " << std::endl;
-	if (reqs[find_req(i)].get_req_l() && reqs[find_req(i)].get_req_h() && reqs[find_req(i)].get_req_b()/* && body_len <= 0*/)
-	{
-		// reqs.push_back(*req);
-		read_line.erase();
-		reqs[find_req(i)].set_read_line(read_line);
-		// req_l = false;
-		// req_h = false;
-		// req_b = true;
-		// reqs[find_req(i)].print_all();
-		// erase_req(i);
-		// delete req;
+	if (reqs[find_req(i)].get_req_l() && reqs[find_req(i)].get_req_h() && reqs[find_req(i)].get_req_b())
 		return (true);
-	}
 	return (false);
 }
 
 void	server::parse_req_line(int i)
 {
-	// req = new request(i);
 	reqs[find_req(i)].set_req_l(true);
 	std::stringstream	ss(reqs[find_req(i)].get_read_line());
 	std::string			m;
@@ -243,7 +218,7 @@ void	server::parse_req_line(int i)
 	std::string			h;
 
 	ss >> m >> u >> h;
-	if ((m != "GET" && m != "POST" && m != "DELETE") || h != "HTTP/1.1" || u.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/?#[]@!$&'()*+,;=%") != std::string::npos)
+	if ((m != "GET" && m != "POST" && m != "DELETE") || h != "HTTP/1.1" || u.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/#[]@!$&'()*+,;=?") != std::string::npos)
 	{
 		set_status("Bad Request", 400, i);
 		return ;
@@ -262,7 +237,6 @@ void	server::parse_req_line(int i)
 
 	getline(ss, m);
 	ss0 << ss.rdbuf();
-	// read_line = ss0.str();
 	reqs[find_req(i)].set_read_line(ss0.str());
 }
 
@@ -295,12 +269,6 @@ void	server::parse_header(int i)
 		else if (tmp == "\r")
 		{
 			reqs[find_req(i)].set_req_h(true);
-			// std::stringstream	ss0;
-
-			// ss0 << ss.rdbuf();
-			// read_line = ss0.str();
-			// read_line.erase();
-			// std::cout << read_line << std::endl;
 			check_header(h, i);
 			reqs[find_req(i)].set_header(h);
 			return ;
@@ -313,13 +281,6 @@ void	server::check_header(std::map<std::string, std::string> &h, int fd)
 	std::map<std::string, std::string>::iterator	i = h.find("Transfer-Encoding");
 	std::map<std::string, std::string>::iterator	j = h.find("Content-Length");
 
-	// if (j != h.end())
-	// {
-	// 	std::stringstream	ss(j->second);
-
-	// 	ss >> body_len;
-	// 	body_len = body_len - read_line.size();
-	// }
 	if (i != h.end())
 	{
 		if (i->second != "chunked")
@@ -385,7 +346,6 @@ void	server::post(int fd)
 	if (file.is_open())
 	{
 		file.write(&(buff[i]), read_len - i);
-		// delete[] buff;
 		file.seekp(0, file.end);
 		long size = file.tellp();
 		if (size >= std::stoi(reqs[find_req(fd)].get_header()["Content-Length"])) {
@@ -395,3 +355,23 @@ void	server::post(int fd)
 	}
 }
 
+void	server::drop_client(int i)
+{
+	close(i);
+	FD_CLR(i, &read);
+	FD_CLR(i, &write);
+	std::cout << "this fd is droped = " << reqs[find_req(i)].get_fd() << std::endl;
+	erase_req(i);
+}
+
+void	server::add_req(int s)
+{
+	for (size_t i = 0; i < serv.size(); i++)
+	{
+		if (serv[i].get_fd() == s)
+		{
+			reqs.push_back(request(acpt_fd, serv[i].get_host()));
+			break ;
+		}
+	}
+}

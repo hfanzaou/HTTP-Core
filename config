@@ -11,23 +11,20 @@ server
         methods GET POST
         root srcs/
         autoindex off
-        index index.html
+        index index1.html
     }
 
     location /vid
     {
         methods POST GET DELETE
-        index index.html
         root root/
         autoindex on
     }
-
-	location /loc
 }
 
 server {
 	host 127.0.0.1
-    port 8080
+    port 8081
     server_name www.example.com example.com
     max_body_size 1000000000
     error_page 400 root/error/error400.html

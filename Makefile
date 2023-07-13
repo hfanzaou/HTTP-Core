@@ -6,16 +6,17 @@
 #    By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/06/09 22:12:40 by ebensalt          #+#    #+#              #
-#    Updated: 2023/07/05 17:11:19 by hfanzaou         ###   ########.fr        #
+#    Updated: 2023/07/12 23:11:57 by hfanzaou         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME		= webserv
 CPP			= main.cpp \
-			  server/server.cpp \
-			  request/request.cpp \
-			  Response/Response.cpp \
-			  ConfigParse/Config.cpp \
+			  server/server.cpp   \
+			  server/Socket.cpp    \
+			  request/request.cpp   \
+			  Response/Response.cpp  \
+			  ConfigParse/Config.cpp  \
 			  ConfigParse/Location.cpp \
 			  ConfigParse/ServerConfig.cpp
 CC			= c++

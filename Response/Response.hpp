@@ -34,7 +34,7 @@ class Response {
 		std::map<int, std::pair<std::ifstream, size_t> > _client;
 		std::ifstream::pos_type _content_length;
 		size_t _head_len;
-		int c;
+		std::ifstream::pos_type c;
 	public :
 		Response(request, const ServerConfig&);
 		Response(const Response& );

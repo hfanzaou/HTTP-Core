@@ -3,25 +3,16 @@
 /*                                                        :::      ::::::::   */
 /*   request.cpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
+/*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/15 21:05:41 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/05 02:15:05 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/07/12 23:13:54 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "request.hpp"
 
-request::request(int i)
-{
-	msg = "OK";
-	status_code = 200;
-	fd = i;
-	req_l = false;
-	req_h = false;
-	req_b = true;
-	// std::cout << fd << std::endl;
-}
+request::request(int i, std::string &h) : msg("OK"), status_code(200), fd(i), req_l(false), req_h(false), req_b(true), host(h) {}
 
 request::~request(void) {}
 
@@ -66,6 +57,7 @@ void	request::print_all(void)
 	for (std::map<std::string, std::string>::iterator i = header.begin(); i != header.end(); i++)
 		std::cout << i->first << " = " << i->second << std::endl;
 	std::cout << "}" << std::endl;
+	std::cout << "host => " << host << std::endl;
 }
 
 int	request::get_fd(void)
@@ -121,4 +113,18 @@ void	request::set_read_line(std::string r)
 void	request::add_to_read_line(char *b)
 {
 	read_line += b;
+}
+
+std::string	&request::get_method(void)
+{
+	return (method);
+}
+
+std::string request::get_uri()
+{
+	return (request_uri);
+}
+int request::get_status_code()
+{
+	return (status_code);
 }
