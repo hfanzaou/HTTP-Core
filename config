@@ -4,8 +4,8 @@ server
     port 8080
     server_name example localhost
     max_body_size 1000000000
-    error_page 400 root/error/error400.html
-    error_page 404 root/error/error404.html
+    error_page 500 error_pages/error500.html
+    error_page 404 error_pages/error404.html
 
     location / {
         methods GET POST
@@ -26,22 +26,22 @@ server {
     port 8081
     server_name www.example.com example.com
     max_body_size 1000000000
-    error_page 400 root/error/error400.html
-    error_page 404 root/error/error404.html
+    error_page 500 error_pages/error500.html
+    error_page 404 error_pages/error404.html
 
 	location /
     {
         methods GET POST DELETE
         index index.html
         autoindex on
-        root root/cgi-bin
+        root root/
     }
 
 
     location /loc
     {
         methods GET POST
-        root root/private
+        root root/
         autoindex on
         index index.html
     }
