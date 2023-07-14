@@ -6,7 +6,7 @@
 /*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 22:17:38 by ajana             #+#    #+#             */
-/*   Updated: 2023/07/04 16:42:59 by ajana            ###   ########.fr       */
+/*   Updated: 2023/07/14 05:53:44 by ajana            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -75,7 +75,6 @@ void	ServerConfig::addErrorPage(std::istringstream& lineStream)
 	else if (err_num < 100 || err_num > 599)
 		throw std::runtime_error("Invalid error code");
 	else if (access(err_page.c_str(), R_OK) == -1) {
-		std::cout << err_page << std::endl;
 		throw std::runtime_error("Invalid error page path");
 	}
 	err_pages[err_num] = err_page;

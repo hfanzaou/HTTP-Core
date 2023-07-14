@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 21:58:22 by ajana             #+#    #+#             */
-/*   Updated: 2023/07/05 17:30:41 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/14 06:14:14 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -43,6 +43,7 @@ class ServerConfig
 		unsigned long					getMaxBodySize() const;
 		const std::vector<Location>&	getLocations() const;
 		const std::map<short, std::string>& getErrorPages() const;
+		bool	checkServer();
 
 		void	printServer() const;
 };

@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <utility>
 #include <cstdio>
+#include <ctime>
 
 class Response {
 	protected :
@@ -29,6 +30,7 @@ class Response {
 		std::string _res;
 		std::ifstream _file;
 		bool Allow_method;
+		bool redirect;
 		DIR *_dir;
 		size_t _pos;
 		std::map<int, std::pair<std::ifstream, size_t> > _client;

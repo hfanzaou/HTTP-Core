@@ -6,7 +6,7 @@
 /*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 22:26:31 by ajana             #+#    #+#             */
-/*   Updated: 2023/06/21 02:10:19 by ajana            ###   ########.fr       */
+/*   Updated: 2023/07/14 06:07:11 by ajana            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -51,11 +51,27 @@ void	Location::setAutoIndex(std::istringstream& lineStream)
 		throw std::runtime_error("Invalid auto index!");
 }
 
+void	Location::setRedirect(std::istringstream& lineStream)
+{
+	if (!(lineStream >> redirect) || !lineStream.eof())
+		throw std::runtime_error("Invalid redirection");
+}
+
+void	Location::setUploadPath(std::istringstream& lineStream)
+{
+	if (!(lineStream >> upload_path) || !lineStream.eof())
+		throw std::runtime_error("Invalid redirection");
+}
+
 const std::string&	Location::getPath() const { return path; }
 
 const std::string&	Location::getroot() const { return root; }
 
 const std::string&	Location::getIndex() const { return index; }
+
+const std::string&	Location::getRedirect() const { return redirect; }
+
+const std::string&	Location::getUploadPath() const { return upload_path; }
 
 const std::vector<std::string>& Location::getMethods() const { return methods; }
 
@@ -72,5 +88,7 @@ void	Location::printLocation() const
 	std::cout << std::endl;
 	std::cout << "	index: " << index << std::endl
 			  << "	root: " << root << std::endl
-			  << "	AutoIndex: " << auto_index << std::endl;
+			  << "	AutoIndex: " << auto_index << std::endl
+			  << "	Redirect: " << redirect << std::endl
+			  << "	Upload path: " << upload_path << std::endl;
 }

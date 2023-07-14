@@ -6,7 +6,7 @@
 /*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/05 16:41:53 by ajana             #+#    #+#             */
-/*   Updated: 2023/06/21 08:07:20 by ajana            ###   ########.fr       */
+/*   Updated: 2023/07/14 06:09:29 by ajana            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,20 +36,22 @@ Location	parseLocationContext(std::istringstream& lineStream, std::string& conte
 		std::string	token;
 		lineStream >> token;
 
-		if (token == "methods") {
+		if (token == "methods")
 			location.addMethod(lineStream);
-		} else if (token == "root") {
+		else if (token == "root")
 			location.setRoot(lineStream);
-		} else if (token == "index") {
+		else if (token == "index")
 			location.setIndex(lineStream);
-		} else if (token == "autoindex") {
+		else if (token == "autoindex")
 			location.setAutoIndex(lineStream);
-		}
+		else if (token == "return")
+			location.setRedirect(lineStream);
+		else if (token == "upload_path")
+			location.setUploadPath(lineStream);
 		else if (token == "{" || token == "}" || token.empty())
 			continue ;
-		else {
+		else
 			throw std::runtime_error("Invalid identifier inside location context!");
-		}
 	}
 	return (location);
 }
@@ -67,17 +69,16 @@ ServerConfig parseServerContext(std::string& context)
         std::string token;
         lineStream >> token;
 
-        if (token == "host") {
+        if (token == "host")
             server.setHost(lineStream);
-        } else if (token == "port") {
+        else if (token == "port")
             server.setPort(lineStream);
-        } else if (token == "server_name") {
+        else if (token == "server_name")
             server.addServerName(lineStream);
-        } else if (token == "max_body_size") {
+        else if (token == "max_body_size")
             server.setMaxBodySize(lineStream);
-        } else if (token == "error_page") {
+        else if (token == "error_page")
             server.addErrorPage(lineStream);
-		}
 		else if (token == "location") {
 			std::string locationBlock;
             std::getline(ss, locationBlock, '}');
@@ -175,6 +176,7 @@ void	Config::parse()
 	for (size_t i = 0; i < serverBlocks.size(); ++i) {
 		servers.push_back(parseServerContext(serverBlocks[i]));
 	}
+	// checkServer();
 }
 
 std::vector<ServerConfig>&	Config::getServers() { return servers; }

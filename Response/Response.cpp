@@ -3,7 +3,7 @@
 //std::ifstream Response::_file;
 
 Response::Response(request req, const ServerConfig& config) : _req(req), _config(config), 
-	_headers_status(false), _body_status(false), auto_index(false), _fd(req.get_fd()) , Allow_method(false), _dir(NULL)
+	_headers_status(false), _body_status(false), auto_index(false), _fd(req.get_fd()) , Allow_method(false), redirect(false), _dir(NULL)
 {
 	//std::cout << _req << std::endl;
 	req_uri = _req.get_uri();
@@ -100,6 +100,8 @@ std::string Response::generate_error(short error)
 			return ("414 URI Too Long");
 		case 501:
 			return ("501 Not Implemented");
+		case 302:
+			return ("302 Found");	
 	}
 	return ("200 OK");
 }
@@ -107,38 +109,40 @@ std::string Response::generate_error(short error)
 void	Response::handle_err(int err)
 {
 	const std::map<short, std::string>& err_pages = _config.getErrorPages();
-		if (err_pages.find(err) != err_pages.end())
+	if (err_pages.find(err) != err_pages.end())
+	{
+		this->req_uri = err_pages.find(err)->second;
+		std::cout << "hello in the error map" << std::endl;
+		_file.open(this->req_uri, std::ifstream::binary | std::ifstream::ate);
+		if (_file.is_open())
 		{
-			this->req_uri = err_pages.find(err)->second;
-			std::cout << "hello in the error map" << std::endl;
-			_file.open(this->req_uri, std::ifstream::binary | std::ifstream::ate);
-			if (_file.is_open())
-			{
-				this->_content_length = _file.tellg();
-				_file.seekg(0, std::ios::beg);
-				std::vector<char> vec((int)this->_content_length);
-				_file.read(&vec[0], (int)this->_content_length);
-				// _file.close();
-				std::string res(vec.begin(), vec.end());
-				//std::cout << "b3d" << std::endl;
-				this->_res = set_head() + "\r\n" + res;
-			}
-			return;
+			this->_content_length = _file.tellg();
+			_file.seekg(0, std::ios::beg);
+			std::vector<char> vec((int)this->_content_length);
+			_file.read(&vec[0], (int)this->_content_length);
+			// _file.close();
+			std::string res(vec.begin(), vec.end());
+			//std::cout << "b3d" << std::endl;
+			this->_res = set_head() + "\r\n" + res;
 		}
-		std::string error(this->generate_error(err));
-		if (err == 301)
-		{
-			this->_head = "HTTP/1.1 " + error + "\r\nLocation: " + this->req_uri + "/";
-			this->_res = this->_head;
-			//std::cout << this->_res << std::endl;
-			std::cout << this->_head << std::endl;
-			return ;
-		}
-		std::string error_page = "<!DOCTYPE html><html><body><center><h1>ERROR</h1><h1><font size=\"100\">" 
-		+ error.substr(0, 3) + "</font></h1><h1>" + error.substr(3, error.length()) + "</h1></center></body></html>";
-		this->_head = "HTTP/1.1 " + error.substr(0, 3) + "\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string(error_page.size()) + "\r\n\r\n" + error_page;
+		return;
+	}
+	std::string error(this->generate_error(err));
+	if (err == 301 || err == 302)
+	{
+		this->_head = "HTTP/1.1 " + error + "\r\nLocation: " + this->req_uri;
 		this->_res = this->_head;
-		//this->_body = error_page;
+		if (!redirect)
+			this->_res += "/";
+		//std::cout << this->_res << std::endl;
+		std::cout << this->_head << std::endl;
+		return ;
+	}
+	std::string error_page = "<!DOCTYPE html><html><body><center><h1>ERROR</h1><h1><font size=\"100\">" 
+	+ error.substr(0, 3) + "</font></h1><h1>" + error.substr(3, error.length()) + "</h1></center></body></html>";
+	this->_head = "HTTP/1.1 " + error.substr(0, 3) + "\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string(error_page.size()) + "\r\n\r\n" + error_page;
+	this->_res = this->_head;
+	//this->_body = error_page;
 }
 
 void	Response::check_method(const std::vector<std::string>& methods)
@@ -197,6 +201,13 @@ void	Response::match()
 	{
 		if (it->getPath() != this->req_uri.substr(0, it->getPath().length()))
 			continue;
+		if (it->getRedirect() != "")
+		{
+			std::cout << "redirect" << std::endl;
+			redirect = true;
+			this->req_uri = it->getRedirect();
+			throw 302;
+		}	
 		std::string path1 = this->req_uri;	
 		root = it->getroot();
 		path = this->req_uri.substr(it->getPath().length(), this->req_uri.length());
@@ -235,11 +246,16 @@ void	Response::match()
 			}
 			if (it->getIndex() != "")
 			{
-				//std::cout << "catch1" << std::endl;
-				this->index = it->getroot() + "/" + it->getIndex();
-				this->req_uri = this->index;
-				if (access((this->req_uri).c_str(), F_OK) == -1)
-					throw 404;
+				std::cout << "catch1" << std::endl;
+				this->index = this->req_uri + "/" + it->getIndex();
+				if (access((this->index).c_str(), F_OK) != -1)
+					this->req_uri = this->index;
+				else if (it->getAutoIndex())
+				{
+					//std::cout << "catch2" << std::endl;
+					this->index_dir(_dir, this->req_uri);
+					this->auto_index = true;
+				}	
 				//std::cout << "req = " << this->req_uri << std::endl;
 			}
 			else if (it->getAutoIndex())
@@ -383,21 +399,32 @@ std::string get_file_type(std::string file)
 	return ("application/octet-stream");
 }
 
+
+std::string ft_time()
+{
+	std::time_t Time = std::time(NULL);
+	std::istringstream date(std::ctime(&Time));
+	std::string day;
+	std::string daym;
+	std::string month;
+	std::string year;
+	std::string time;
+	date >> day >> month >> daym >> time >> year;
+
+	return (day + ", " + daym + " " + month + " " + year + " " + time + " GMT");
+}
 std::string Response::set_head()
 {
 	std::string head = "";
-	std::map<std::string, std::string>& header = _req.get_header();
+	//std::map<std::string, std::string>& header = _req.get_header();
 	head += "HTTP/1.1 " + std::to_string(this->status_code) + "\r\n";
 	head += "Content-Type: " + get_file_type(this->req_uri) + "\r\n";
 	head += "Content-Length: " + std::to_string(this->_content_length) + "\r\n";
-	//head += "Connection: close\r\n";
-	std::map<std::string, std::string>::iterator it = header.begin();
-	for (;it != header.end(); ++it)
-	{
-		head += it->first + ": ";
-		head += it->second + "\r\n";
-	}
-	//std::cout << head << std::endl;
+	head += "Cache-Control: no-cache\r\n";
+	head += "Accept: */*\r\n";
+	head += "Date: " + ft_time() + "\r\n";
+	head += "Accept-Encoding: gzip, deflate, br\r\n";
+	std::cout << head << std::endl;
 	return (head);
 }
 
