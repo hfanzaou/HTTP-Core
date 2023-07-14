@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:59 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/13 13:53:07 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/14 10:06:33 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,7 @@
 # include "../ConfigParse/Config.hpp"
 # include "../Response/Response.hpp"
 # include "Socket.hpp"
+# include <cstdio>
 
 class server
 {
@@ -49,6 +50,13 @@ class server
 		std::vector<request>		reqs;
 		int							read_len;
 		Config						&config;
+		int							bytes_read;
+		std::string					hex;
+		bool						chunk;
+		// int 						content_len;
+		// size_t						chunkSize;
+		// std::vector<char>			chunk;
+		std::ofstream				*file;
 		std::map<int, Response*> response;
 	public	:
 		server(Config &c);
@@ -62,14 +70,19 @@ class server
 		bool		parse_req(int i);
 		void		parse_req_line(int i);
 		void		set_status(const std::string &m, int s, int i);
-		void		parse_header(int i);
+		int			parse_header(int i);
 		void		check_header(std::map<std::string, std::string> &h, int fd);
 		std::string	remove_r(std::string &s);
 		int			find_req(int i);
 		void		erase_req(int i);
-		void		post(int fd);
+		void		post(int fd, int j);
+		// void		handleChuncked(int fd, int ind);
+		// void		openFile(int fd);
 		void		drop_client(int i);
+		// int			read_chunkSize(int ind);
 		void		add_req(int s);
+		int			get_chunk_size(std::vector<char> &b);
+		bool		check_chunk_end(std::vector<char> &b);
 		ServerConfig get_config(std::string &host);
 		// void		init_fd_set(void);
 };

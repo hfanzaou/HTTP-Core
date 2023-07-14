@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:46 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/14 08:45:39 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/14 10:04:37 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,10 +14,6 @@
 
 server::server(Config &c) : config(c)
 {
-	// for (std::vector<ServerConfig>::iterator it = config.getServers().begin(); it != config.getServers().end(); it++)
-	// {
-
-	// }
 	FD_ZERO(&read);
 	FD_ZERO(&write);
 }
@@ -25,9 +21,7 @@ server::server(Config &c) : config(c)
 void	server::init_server(ServerConfig &s)
 {
 	(void)config;
-	// hostname = "127.0.0.1";
 	hostname = s.getHost();
-	// servname = "8080";
 	servname = s.getPort();
 	memset(&hints, 0, sizeof(hints));
 	hints.ai_family = AF_INET;
@@ -36,9 +30,10 @@ void	server::init_server(ServerConfig &s)
 	option_len = sizeof(option_value);
 	memset(&acpt_addr, 0, sizeof(acpt_addr));
 	acpt_len = sizeof(acpt_addr);
+	// chunkSize = 0;
+	bytes_read = 0;
 	name = s.getServerNames();
-	// FD_ZERO(&read);
-	// FD_ZERO(&write);
+	chunk = false;
 }
 
 void	server::start_server(void)
@@ -55,7 +50,6 @@ void	server::start_server(void)
 		std::cerr << "Error : socket!" << std::endl;
 		return ;
 	}
-	signal(SIGPIPE, SIG_IGN);
 	if (fcntl(s, F_SETFL, O_NONBLOCK) == -1)
 	{
 		std::cerr << "Error : fcntl!" << std::endl;
@@ -67,10 +61,7 @@ void	server::start_server(void)
 		return ;
 	}
 	if (bind(s, res->ai_addr, res->ai_addrlen))
-	{
-		// std::cerr << "Error : bind!" << std::endl;
 		return ;
-	}
 	freeaddrinfo(res);
 	if (listen(s, 10))
 	{
@@ -125,15 +116,18 @@ void	server::multiplex_server(void)
 				}
 				if (it == sock_fd.size() && read_server(i))
 				{
-					delete response[i];
-					response.erase(i);
-					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
+					if (this->response.find(i) != this->response.end())
+					{
+						delete response[i];
+						response.erase(i);
+						this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
+					}
 					FD_SET(i, &write);
 				}
 			}
 			else if (FD_ISSET(i, &tmp_w))
 			{
-				
+
 				if (this->response.find(i) == this->response.end())
 				{
 					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
@@ -153,7 +147,6 @@ void	server::accept_server(int s)
 		std::cerr << "Error : accept!" << std::endl;
 		return ;
 	}
-	std::cout << acpt_fd << std::endl;
 	add_req(s);
 }
 
@@ -165,7 +158,7 @@ bool	server::read_server(int i)
 		drop_client(i);
 		return (false);
 	}
-	//std::cout << buff << std::endl;
+	bytes_read += read_len;
 	if (reqs[find_req(i)].get_req_l() && reqs[find_req(i)].get_req_h() && reqs[find_req(i)].get_req_b())
 		return (false);
 	if (!reqs[find_req(i)].get_req_h())
@@ -203,6 +196,8 @@ void	server::write_server(int i)
 
 bool	server::parse_req(int i)
 {
+	int	j = 0;
+
 	if (!reqs[find_req(i)].get_req_h())
 	{
 		std::string	read_line = reqs[find_req(i)].get_read_line();
@@ -212,11 +207,14 @@ bool	server::parse_req(int i)
 	if (!reqs[find_req(i)].get_req_l())
 		parse_req_line(i);
 	if (!reqs[find_req(i)].get_req_h())
-		parse_header(i);
+		j = parse_header(i);
 	if (!reqs[find_req(i)].get_req_b())
-		post(i);
+		post(i, j);
 	if (reqs[find_req(i)].get_req_l() && reqs[find_req(i)].get_req_h() && reqs[find_req(i)].get_req_b())
+	{
+		std::cout << "done" << std::endl;
 		return (true);
+	}
 	return (false);
 }
 
@@ -243,6 +241,12 @@ void	server::parse_req_line(int i)
 		set_status("URI Too Long", 414, i);
 		return ;
 	}
+	if (u.find('?') != std::string::npos)
+	{
+		std::stringstream	ss0(u);
+		u.clear();
+		getline(ss0, u, '?');
+	}
 	reqs[find_req(i)].set_request_uri(u);
 	std::stringstream	ss0;
 
@@ -260,7 +264,7 @@ void	server::set_status(const std::string &m, int s, int i)
 	reqs[find_req(i)].set_req_b(true);
 }
 
-void	server::parse_header(int i)
+int	server::parse_header(int i)
 {
 	std::stringstream					ss(reqs[find_req(i)].get_read_line());
 	std::string							tmp;
@@ -282,9 +286,19 @@ void	server::parse_header(int i)
 			reqs[find_req(i)].set_req_h(true);
 			check_header(h, i);
 			reqs[find_req(i)].set_header(h);
-			return ;
+			int	j = 0;
+
+			for (; j < read_len; j++)
+			if (j + 3 < read_len && buff[j] == '\r' && buff[j + 1] == '\n' && buff[j + 2] == '\r' && buff[j + 3] == '\n')
+			{
+				j += 4;
+				bytes_read -= j;
+				break ;
+			}
+			return (j);
 		}
 	}
+	return (0);
 }
 
 void	server::check_header(std::map<std::string, std::string> &h, int fd)
@@ -339,40 +353,164 @@ void	server::erase_req(int i)
 	}
 }
 
-void	server::post(int fd)
-{
-	int i = 0;
-
-	for (; i < read_len; i++)
-	{
-		if (!strncmp(&(buff[i]), "\r\n\r\n", 4)) {
-			i += 4;
-			break ;
-		}
-	}
-	if (i == read_len)
-		i = 0;
-
-	std::ofstream file("test", std::ios_base::app | std::ios_base::binary);
-	if (file.is_open())
-	{
-		file.write(&(buff[i]), read_len - i);
-		file.seekp(0, file.end);
-		long size = file.tellp();
-		if (size >= std::stoi(reqs[find_req(fd)].get_header()["Content-Length"])) {
-			reqs[find_req(fd)].set_req_b(true);
-			file.close();
-		}
-	}
-}
-
 void	server::drop_client(int i)
 {
 	close(i);
 	FD_CLR(i, &read);
 	FD_CLR(i, &write);
-	std::cout << "this fd is droped = " << reqs[find_req(i)].get_fd() << std::endl;
 	erase_req(i);
+}
+
+// int	server::read_chunkSize(int ind)
+// {
+// 	chunkSize = 0;
+// 	for (; ind < read_len && strncmp(&buff[ind], "\r\n", 2); ind++)
+// 	{
+// 		std::stringstream	ss;
+// 		int					tmp = 0;
+// 		ss << buff[ind];
+// 		ss >> std::hex >> tmp;
+// 		chunkSize *= 16;
+// 		chunkSize += tmp;
+// 	}
+// 	return (ind + 2);
+// }
+
+// void	server::handleChuncked(int fd, int ind)
+// {
+// 	if (bytes_read == 0)
+// 		ind = read_chunkSize(ind);
+
+// 	bytes_read += read_len;
+// 	for (; ind < read_len; ind++)
+// 	{
+// 		if (chunk.size() == chunkSize)
+// 		{
+// 			file.write(&chunk[0], chunk.size());
+// 			chunk.clear();
+// 			ind += 2;
+// 			ind = read_chunkSize(ind);
+// 		}
+// 		if (chunkSize == 0)
+// 		{
+// 			reqs[find_req(fd)].set_req_b(true);
+// 			bytes_read = 0;
+// 			file.close();
+// 			return ;
+// 		}
+// 		chunk.push_back(buff[ind]);
+// 	}
+// }
+
+// void	server::openFile(int fd)
+// {
+// 	std::map<std::string, std::string>::iterator it = reqs[find_req(fd)].get_header().find("Content-Type");
+// 	size_t	pos = it->second.find('/', 0);
+// 	std::string name = "test." + it->second.substr(pos + 1);
+
+// 	file.open(name.c_str(), std::ios::binary);
+// 	if (file.is_open() == false)
+// 		std::cout << "Error opening file" << std::endl;
+// }
+
+void	server::post(int fd, int j)
+{
+	static int i = 0;
+	// int j = 0;
+
+	// std::cout << "i :" << i << std::endl;
+	if (i == 0)
+	{
+		file = new std::ofstream("/goinfre/ebensalt/test" , std::ios::binary);
+		// for (; j < read_len; j++)
+		// 	reqs[find_req(fd)].get_body().push_back(buff[j]);
+		if (reqs[find_req(fd)].get_header().find("Content-Length") != reqs[find_req(fd)].get_header().end())
+		{
+			std::stringstream(reqs[find_req(fd)].get_header()["Content-Length"]) >> i;
+			file->rdbuf()->pubsetbuf(nullptr, i);
+		}
+		// else
+		// {
+		// 	for (size_t it = 0; it < reqs[find_req(fd)].get_body().size(); it++)
+		// 	{
+		// 		if (it + 1 < reqs[find_req(fd)].get_body().size() && reqs[find_req(fd)].get_body()[it] == '\r' && reqs[find_req(fd)].get_body()[it + 1] == '\n')
+		// 		{
+		// 			i = std::strtol(hex.c_str(), NULL, 16);
+		// 			// std::cout << "i1 : " << i << std::endl;
+		// 			hex.clear();
+		// 			file->rdbuf()->pubsetbuf(nullptr, i);
+		// 			reqs[find_req(fd)].get_body().erase(reqs[find_req(fd)].get_body().begin(), reqs[find_req(fd)].get_body().begin() + it + 2);
+		// 			bytes_read -= 2;
+		// 			break ;
+		// 		}
+		// 		hex += reqs[find_req(fd)].get_body()[it];
+		// 		bytes_read--;
+		// 	}
+		// }
+	}
+	// else
+	// 	for (; j < read_len; j++)
+	// 		reqs[find_req(fd)].get_body().push_back(buff[j]);
+	if (reqs[find_req(fd)].get_header().find("Content-Length") != reqs[find_req(fd)].get_header().end())
+	{
+		i -= bytes_read;
+		file->write(&buff[j], bytes_read);
+		bytes_read = 0;
+		if (i == 0)
+		{
+			std::cout << "close" << std::endl;
+			file->close();
+			file->clear();
+			delete file;
+			reqs[find_req(fd)].set_req_b(true);
+		}
+	}
+	// else
+	// {
+	// 	if (i > bytes_read)
+	// 	{
+	// 		i -= bytes_read;
+	// 		file->write(&reqs[find_req(fd)].get_body()[0], bytes_read);
+	// 		reqs[find_req(fd)].get_body().clear();
+	// 		bytes_read = 0;
+	// 	}
+	// 	else if (i != 0)
+	// 	{
+	// 		file->write(&reqs[find_req(fd)].get_body()[0], i);
+	// 		i += 2;
+	// 		reqs[find_req(fd)].get_body().erase(reqs[find_req(fd)].get_body().begin(), reqs[find_req(fd)].get_body().begin() + i);
+	// 		bytes_read -= i;
+	// 		i = 0;
+	// 	}
+	// 	if (i == 0)
+	// 	{
+	// 		for (size_t it = 0; it < reqs[find_req(fd)].get_body().size(); it++)
+	// 		{
+	// 		// std::cout << "i :" << i << std::endl;
+	// 			if (it + 1 < reqs[find_req(fd)].get_body().size() && reqs[find_req(fd)].get_body()[it] == '\r' && reqs[find_req(fd)].get_body()[it + 1] == '\n')
+	// 			{
+	// 				i = std::strtol(hex.c_str(), NULL, 16);
+	// 				// std::cout << "i2 : " << i << std::endl;
+	// 				hex.clear();
+	// 				if (i == 0)
+	// 				{
+	// 					bytes_read = 0;
+	// 					std::cout << "close" << std::endl;
+	// 					file->close();
+	// 					file->clear();
+	// 					delete file;
+	// 					reqs[find_req(fd)].set_req_b(true);
+	// 					return ;
+	// 				}
+	// 				reqs[find_req(fd)].get_body().erase(reqs[find_req(fd)].get_body().begin(), reqs[find_req(fd)].get_body().begin() + it + 2);
+	// 				bytes_read -= 2;
+	// 				break ;
+	// 			}
+	// 			hex += reqs[find_req(fd)].get_body()[it];
+	// 			bytes_read--;
+	// 		}
+	// 	}
+	// }
 }
 
 void	server::add_req(int s)
@@ -385,6 +523,44 @@ void	server::add_req(int s)
 			break ;
 		}
 	}
+}
+
+int	server::get_chunk_size(std::vector<char> &b)
+{
+	std::string	hex;
+
+	check_chunk_end(b);
+	for (size_t i = 0; i < b.size(); i++)
+	{
+		// if (b[i] == '\r')
+		// {
+
+		// }
+		// else
+		// 	hex += b[i];
+		if (b[i] == '\r')
+			std::cout << "\\r" << std::endl;
+		else if (b[i] == '\n')
+			std::cout << "\\n" << std::endl;
+		else
+			std::cout << b[i] << std::endl;
+	}
+	exit(10);
+	return (0);
+}
+
+bool	server::check_chunk_end(std::vector<char> &b)
+{
+	std::vector<char>::iterator	i = std::find(b.begin(), b.end(), '\r');
+
+	if (i != b.end())
+	{
+		size_t	it = std::distance(b.begin(), i) + 1;
+		if (it < b.size() && b[it] == '\n')
+			return (true);
+			
+	}
+	return (false);
 }
 
 ServerConfig server::get_config(std::string &host)
