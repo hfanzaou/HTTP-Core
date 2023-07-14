@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:46 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/14 05:22:52 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/14 08:45:39 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -124,7 +124,12 @@ void	server::multiplex_server(void)
 					}
 				}
 				if (it == sock_fd.size() && read_server(i))
+				{
+					delete response[i];
+					response.erase(i);
+					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
 					FD_SET(i, &write);
+				}
 			}
 			else if (FD_ISSET(i, &tmp_w))
 			{
