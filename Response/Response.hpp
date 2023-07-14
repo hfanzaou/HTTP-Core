@@ -11,7 +11,7 @@
 #include <utility>
 #include <cstdio>
 #include <ctime>
-
+#include "../cgi/cgi.hpp"
 class Response {
 	protected :
 		request _req;
@@ -31,6 +31,7 @@ class Response {
 		std::ifstream _file;
 		bool Allow_method;
 		bool redirect;
+		bool _cgi;
 		DIR *_dir;
 		size_t _pos;
 		std::map<int, std::pair<std::ifstream, size_t> > _client;

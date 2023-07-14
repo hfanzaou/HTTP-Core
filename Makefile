@@ -6,7 +6,7 @@
 #    By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/06/09 22:12:40 by ebensalt          #+#    #+#              #
-#    Updated: 2023/07/12 23:11:57 by hfanzaou         ###   ########.fr        #
+#    Updated: 2023/07/14 12:30:58 by hfanzaou         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -18,9 +18,10 @@ CPP			= main.cpp \
 			  Response/Response.cpp  \
 			  ConfigParse/Config.cpp  \
 			  ConfigParse/Location.cpp \
-			  ConfigParse/ServerConfig.cpp
+			  ConfigParse/ServerConfig.cpp \
+			  cgi/cgi.cpp
 CC			= c++
-CPPFLAGS	= -Wall -Wextra -Werror -std=c++98 -fsanitize=address -g3
+CPPFLAGS	= -Wall -Wextra -Werror -std=c++98 #-fsanitize=address -g3
 O			= $(CPP:.cpp=.o)
 RM			= rm -rf
 %.o			: %.cpp

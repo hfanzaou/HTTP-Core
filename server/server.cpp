@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:46 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/14 10:04:37 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/14 12:40:15 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -421,7 +421,7 @@ void	server::post(int fd, int j)
 	// std::cout << "i :" << i << std::endl;
 	if (i == 0)
 	{
-		file = new std::ofstream("/goinfre/ebensalt/test" , std::ios::binary);
+		file = new std::ofstream("test" , std::ios::binary);
 		// for (; j < read_len; j++)
 		// 	reqs[find_req(fd)].get_body().push_back(buff[j]);
 		if (reqs[find_req(fd)].get_header().find("Content-Length") != reqs[find_req(fd)].get_header().end())

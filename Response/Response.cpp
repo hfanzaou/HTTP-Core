@@ -3,7 +3,7 @@
 //std::ifstream Response::_file;
 
 Response::Response(request req, const ServerConfig& config) : _req(req), _config(config), 
-	_headers_status(false), _body_status(false), auto_index(false), _fd(req.get_fd()) , Allow_method(false), redirect(false), _dir(NULL)
+	_headers_status(false), _body_status(false), auto_index(false), _fd(req.get_fd()) , Allow_method(false), redirect(false), _cgi(false), _dir(NULL)
 {
 	//std::cout << _req << std::endl;
 	req_uri = _req.get_uri();
@@ -282,6 +282,19 @@ void	Response::match()
 		std::cout << "file open =" << this->req_uri << std::endl;
 		if (!_file.is_open())
 			throw 403;
+		std::cout << "sub " << this->req_uri.substr(req_uri.length() - 4, req_uri.length()) << std::endl;	
+		if (this->req_uri.substr(req_uri.length() - 3, req_uri.length()) == ".py")
+		{
+			_file.close();
+			Cgi cgi(_req, req_uri);
+			cgi.execute_cgi();
+			this->_content_length = cgi.getCgiResponse().length() - 29;
+			this->_res = "HTTP/1.1 200 OK\r\nContent-Length: " + std::to_string(_content_length) + "\r\n" + cgi.getCgiResponse();
+			_cgi = true;
+			this->_headers_status = true;
+			this->_body_status = true;
+			return;
+		}	
 		else
 		{	
 			std::cout << "catch3" << std::endl;
@@ -327,29 +340,11 @@ void Response::generate_response()
 		this->status_code = err;
 		std::cout << this->_head << std::endl;
 		_req.set_status_code(err);
-		//std::cout << "catch" << std::endl;
-		// if (err_pages.find(err) != err_pages.end())
-		// {
-		// 	this->req_uri = err_pages.find(err)->second;
-		// 	std::cout << "hello in the error map" << std::endl;
-		// 	_file.open(this->req_uri, std::ifstream::binary | std::ifstream::ate);
-		// 	if (_file.is_open())
-		// 	{
-		// 		this->_content_length = _file.tellg();
-		// 		_file.seekg(0, std::ios::beg);
-		// 		this->_res = set
-		// 		return;
-		// 	}
-		// 	err = 500;
-		// }
 		_headers_status = true;
 		_body_status = true;
-		//std::cout << "error in this req_uri = " << this->req_uri << std::endl;
-
 		this->handle_err(err);
 		_file.close();
 		_file.clear();
-		//std::cout << this->_res << std::endl;
 	}
 	catch(std::exception &e)
 	{
@@ -461,16 +456,6 @@ void	Response::handle_delete(DIR *dir, std::string req)
 
 void	Response::handle_get()
 {
-	// if (_headers_status == false)
-	// {
-	// 	std::cout << "here" << std::endl;
-	// 	_headers_status = true;
-	// 	this->_head = set_head() + "\r\n";
-	// 	this->_res = this->_head;
-	// 	std::cout << this->_res << std::endl;
-	// 	if (!_file.is_open())
-	// 		throw 404;
-	// }
 	if (_headers_status == false)
 	{
 		c = 0;
@@ -507,9 +492,6 @@ void	Response::handle_get()
 		//std::cout << this->_res << std::endl;
 		if (l < j)
 		{
-			//std::cout << "fd = " << _req.get_fd() << std::endl;
-			// std::cout << "fd = " << _fd << " l =";
-			// std::cout << l << std::endl;
 			std::cout << this->req_uri << " finished con len = " << this->_content_length << " c = " << c << std::endl; 
 			this->_body_status = true;
 			//std::cout << this->_head << std::endl;
