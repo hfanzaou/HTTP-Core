@@ -7,7 +7,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 
-Cgi::Cgi(request& _req, std::string& _path) : req(_req), path(_path)
+Cgi::Cgi(request& _req, const std::string& _path) : req(_req), path(_path)
 {}
 
 char    **Cgi::getEnv()

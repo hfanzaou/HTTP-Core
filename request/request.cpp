@@ -6,13 +6,13 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/15 21:05:41 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/13 13:23:24 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/15 19:51:45 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "request.hpp"
 
-request::request(int i, std::string &h) : msg("OK"), status_code(200), fd(i), req_l(false), req_h(false), req_b(true), host(h) {}
+request::request(int i, std::string &h) : msg("OK"), status_code(200), fd(i), req_l(false), req_h(false), req_b(true), host(h), name("example") {}
 
 request::~request(void) {}
 
@@ -115,12 +115,12 @@ void	request::add_to_read_line(char *b)
 	read_line += b;
 }
 
-std::string	&request::get_method(void)
+const std::string	&request::get_method(void)
 {
 	return (method);
 }
 
-std::string &request::get_uri()
+const std::string &request::get_uri()
 {
 	return (request_uri);
 }
@@ -131,4 +131,8 @@ int request::get_status_code()
 std::string	&request::get_host()
 {
 	return (host);
+}
+std::string &request::get_name()
+{
+	return (name);
 }

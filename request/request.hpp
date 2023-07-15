@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/15 21:05:30 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/13 13:43:05 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/15 19:26:20 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -36,6 +36,7 @@ class request
 		bool								req_h;
 		bool								req_b;
 		std::string							host;
+		std::string							name;
 	public	:
 		request(int i, std::string &h);
 		~request(void);
@@ -58,10 +59,11 @@ class request
 		std::string							&get_read_line(void);
 		void								set_read_line(std::string r);
 		void								add_to_read_line(char *b);
-		std::string							&get_method(void);
-		std::string							&get_uri();
+		const std::string					&get_method(void);
+		const std::string					&get_uri();
 		int 								get_status_code();
 		std::string							&get_host();
+		std::string							&get_name();
 };
 
 #endif

@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:46 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/15 08:28:49 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/15 20:05:04 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -119,11 +119,8 @@ void	server::multiplex_server(void)
 				{
 					if (this->response.find(i) != this->response.end())
 					{
-						// response[i]->Drop_file();
-						// delete response[i];
-						// response.erase(i);
 						Drop_Response(i);
-						this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
+						this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_name()))));
 					}
 					FD_SET(i, &write);
 				}
@@ -133,7 +130,7 @@ void	server::multiplex_server(void)
 
 				if (this->response.find(i) == this->response.end())
 				{
-					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
+					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_name()))));
 					//reqs[find_req(i)].print_all();
 				}
 				write_server(i);
@@ -160,13 +157,7 @@ bool	server::read_server(int i)
 		
 		std::cerr << "Error : recv!" << std::endl;
 		if (this->response.find(i) != this->response.end())
-		{
-			// response[i]->Drop_file();
-			// delete response[i];
-			// response.erase(i);
 			Drop_Response(i);
-			this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
-		}
 		drop_client(i);
 		return (false);
 	}
@@ -188,7 +179,7 @@ void	server::write_server(int i)
 		if (send(i, res.c_str(), res.size(), 0) == -1)
 		{
 			//std::cout << "mehdi l7imar " << std::endl; 
-				std::cerr << "Error : send!" << std::endl;
+			std::cerr << "Error : send!" << std::endl;
 			return ;
 		}
 	// }
@@ -202,7 +193,7 @@ void	server::write_server(int i)
 		// erase_req(i);
 		//delete req;
 		//close(i);
-		//reqs[find_req(i)].print_all();
+		reqs[find_req(i)].print_all();
 		// std::cout << "this fd is droped = " << reqs[find_req(i)].get_fd() << std::endl;
 		drop_client(i);
 	}
@@ -577,14 +568,23 @@ bool	server::check_chunk_end(std::vector<char> &b)
 	return (false);
 }
 
-ServerConfig server::get_config(std::string &host)
+ServerConfig& server::get_config(std::string &name)
 {
-	std::vector<ServerConfig> configs = config.getServers();
+	std::vector<ServerConfig>& configs = config.getServers();
 	for (std::vector<ServerConfig>::iterator it = configs.begin(); it != configs.end(); ++it)
 	{
-		std::cout << "host = " << host << " it->getHost() = " << it->getHost() << std::endl;
-		if (host == it->getHost() + ":" + it->getPort())
-			return (*it);
+		//std::cout << "host = " << host << " it->getHost() = " << it->getHost() << std::endl;
+		std::vector<std::string>::const_iterator it2;
+		for (it2 = it->getServerNames().cbegin(); it2 != it->getServerNames().cend(); ++it2)
+		{
+			std::vector<std::string>::const_iterator it2;
+			for (it2 = it->getServerNames().cbegin(); it2 != it->getServerNames().cend(); ++it2)
+			{
+				std::cout << "it2 = " << *it2 << "name " << name << std::endl;
+				if (name == *it2)
+					return (*it);
+			}
+		}
 	}
 	return (config.getServers()[0]);
 }
