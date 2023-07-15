@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:46 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/14 12:40:15 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/15 08:28:49 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,6 +50,7 @@ void	server::start_server(void)
 		std::cerr << "Error : socket!" << std::endl;
 		return ;
 	}
+	signal(SIGPIPE, SIG_IGN);
 	if (fcntl(s, F_SETFL, O_NONBLOCK) == -1)
 	{
 		std::cerr << "Error : fcntl!" << std::endl;
@@ -63,7 +64,7 @@ void	server::start_server(void)
 	if (bind(s, res->ai_addr, res->ai_addrlen))
 		return ;
 	freeaddrinfo(res);
-	if (listen(s, 10))
+	if (listen(s, 100))
 	{
 		std::cerr << "Error : listen!" << std::endl;
 		return ;
@@ -118,8 +119,10 @@ void	server::multiplex_server(void)
 				{
 					if (this->response.find(i) != this->response.end())
 					{
-						delete response[i];
-						response.erase(i);
+						// response[i]->Drop_file();
+						// delete response[i];
+						// response.erase(i);
+						Drop_Response(i);
 						this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
 					}
 					FD_SET(i, &write);
@@ -154,7 +157,16 @@ bool	server::read_server(int i)
 {
 	if ((read_len = recv(i, buff, 1024, 0)) < 1)
 	{
+		
 		std::cerr << "Error : recv!" << std::endl;
+		if (this->response.find(i) != this->response.end())
+		{
+			// response[i]->Drop_file();
+			// delete response[i];
+			// response.erase(i);
+			Drop_Response(i);
+			this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
+		}
 		drop_client(i);
 		return (false);
 	}
@@ -183,8 +195,10 @@ void	server::write_server(int i)
 	if (response[i]->get_send_status())
 	{
 		// std::cout << "lmhidi l7imari" << std::endl;
- 		delete response[i];
-		response.erase(i);
+		// response[i]->Drop_file();
+ 		// delete response[i];
+		// response.erase(i);
+		Drop_Response(i);
 		// erase_req(i);
 		//delete req;
 		//close(i);
@@ -573,4 +587,12 @@ ServerConfig server::get_config(std::string &host)
 			return (*it);
 	}
 	return (config.getServers()[0]);
+}
+
+
+void	server::Drop_Response(int i)
+{
+	response[i]->Drop_file();
+	delete response[i];
+	response.erase(i);
 }

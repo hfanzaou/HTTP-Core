@@ -12,7 +12,7 @@ Response::Response(request req, const ServerConfig& config) : _req(req), _config
 	status_code = _req.get_status_code();
 	// std::cout << "*****" << status_code << std::endl;
 	c = 0;
-	//this->_res = "";
+	this->_res = "";
 	//std::cout << "Constructor called" << std::endl;
 }
 
@@ -94,13 +94,13 @@ std::string Response::generate_error(short error)
 			return ("409 Conflict");
 		case NOT_ALLOWED:
 			return ("405 Method Not Allowed");
-		case 400:
+		case BAD_REQUEST:
 			return ("400 Bad Request");
-		case 414:
+		case LONG_URI:
 			return ("414 URI Too Long");
-		case 501:
+		case NOT_IMPLEM:
 			return ("501 Not Implemented");
-		case 302:
+		case FOUND:
 			return ("302 Found");	
 	}
 	return ("200 OK");
@@ -112,7 +112,6 @@ void	Response::handle_err(int err)
 	if (err_pages.find(err) != err_pages.end())
 	{
 		this->req_uri = err_pages.find(err)->second;
-		std::cout << "hello in the error map" << std::endl;
 		_file.open(this->req_uri, std::ifstream::binary | std::ifstream::ate);
 		if (_file.is_open())
 		{
@@ -120,9 +119,7 @@ void	Response::handle_err(int err)
 			_file.seekg(0, std::ios::beg);
 			std::vector<char> vec((int)this->_content_length);
 			_file.read(&vec[0], (int)this->_content_length);
-			// _file.close();
 			std::string res(vec.begin(), vec.end());
-			//std::cout << "b3d" << std::endl;
 			this->_res = set_head() + "\r\n" + res;
 		}
 		return;
@@ -134,15 +131,12 @@ void	Response::handle_err(int err)
 		this->_res = this->_head;
 		if (!redirect)
 			this->_res += "/";
-		//std::cout << this->_res << std::endl;
-		std::cout << this->_head << std::endl;
 		return ;
 	}
 	std::string error_page = "<!DOCTYPE html><html><body><center><h1>ERROR</h1><h1><font size=\"100\">" 
 	+ error.substr(0, 3) + "</font></h1><h1>" + error.substr(3, error.length()) + "</h1></center></body></html>";
 	this->_head = "HTTP/1.1 " + error.substr(0, 3) + "\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string(error_page.size()) + "\r\n\r\n" + error_page;
 	this->_res = this->_head;
-	//this->_body = error_page;
 }
 
 void	Response::check_method(const std::vector<std::string>& methods)
@@ -152,7 +146,6 @@ void	Response::check_method(const std::vector<std::string>& methods)
 		if (this->_method == *it2)
 		{
 			this->Allow_method = true;
-			//std::cout << " kfdkf "<< *it2 << std::endl;
 			return ;
 		}
 	}
@@ -175,7 +168,6 @@ void	Response::index_dir(DIR *dir, std::string& path)
 	while ((reader = readdir(dir)))
 	{
 		name = reader->d_name;
-		//std::cout << name << std::endl;
 		if (name != "0index.html")
 			file << "<a href=\"" + name + "\">" + name;
 		DIR *dir;	
@@ -203,7 +195,6 @@ void	Response::match()
 			continue;
 		if (it->getRedirect() != "")
 		{
-			std::cout << "redirect" << std::endl;
 			redirect = true;
 			this->req_uri = it->getRedirect();
 			throw 302;
@@ -211,25 +202,23 @@ void	Response::match()
 		std::string path1 = this->req_uri;	
 		root = it->getroot();
 		path = this->req_uri.substr(it->getPath().length(), this->req_uri.length());
+#if DEBUG
+
 		std::cout << "final = " << root + path << std::endl;
-		// std::cout << "get path = " << it->getPath() << std::endl;
-		// std::cout << "root = " << root << std::endl;
-		// std::cout << "path = " << path << std::endl;
-		// std::cout << "req sub = " << this->req_uri.substr(0, it->getPath().length()) << std::endl;
-		// if (it->getroot() != this->req_uri.substr(0, it->getroot().length()))
-		// 	continue;
+		std::cout << "get path = " << it->getPath() << std::endl;
+		std::cout << "root = " << root << std::endl;
+		std::cout << "path = " << path << std::endl;
+		std::cout << "req sub = " << this->req_uri.substr(0, it->getPath().length()) << std::endl;
+#endif
 		if (access((root + path).c_str(), F_OK) == -1)
-			continue;
+			continue;	
 		this->req_uri = root + path;
-		std::cout << "final req = " << this->req_uri << std::endl;
 		this->check_method(it->getMethods());
 		_dir = opendir(this->req_uri.c_str());
 		if (this->_method == "DELETE")
 		{
 			if (_dir && path1.at(path1.length() - 1) != '/')
 			{
-				std::cout << "asdffds " << std::endl;
-				std::cout << path1 << std::endl;
 				this->req_uri = path1;
 				closedir(_dir);
 				throw 301;
@@ -252,15 +241,13 @@ void	Response::match()
 					this->req_uri = this->index;
 				else if (it->getAutoIndex())
 				{
-					//std::cout << "catch2" << std::endl;
 					this->index_dir(_dir, this->req_uri);
 					this->auto_index = true;
 				}	
-				//std::cout << "req = " << this->req_uri << std::endl;
 			}
 			else if (it->getAutoIndex())
 			{
-				//std::cout << "catch2" << std::endl;
+				std::cout << "catch2" << std::endl;
 				this->index_dir(_dir, this->req_uri);
 				this->auto_index = true;
 			}
@@ -271,12 +258,7 @@ void	Response::match()
 			}
 			closedir(_dir);
 		}
-		
-		if (_file.is_open())
-		{
-			_file.close();
-			_file.clear();
-		}
+		Drop_file();
 		std::cout << this->req_uri << std::endl;
 		_file.open(this->req_uri, std::ifstream::binary | std::ifstream::ate);
 		std::cout << "file open =" << this->req_uri << std::endl;
@@ -285,7 +267,7 @@ void	Response::match()
 		std::cout << "sub " << this->req_uri.substr(req_uri.length() - 4, req_uri.length()) << std::endl;	
 		if (this->req_uri.substr(req_uri.length() - 3, req_uri.length()) == ".py")
 		{
-			_file.close();
+			Drop_file();
 			Cgi cgi(_req, req_uri);
 			cgi.execute_cgi();
 			this->_content_length = cgi.getCgiResponse().length() - 29;
@@ -297,11 +279,8 @@ void	Response::match()
 		}	
 		else
 		{	
-			std::cout << "catch3" << std::endl;
 			this->_content_length = _file.tellg();
-			std::cout << "len = " << this->_content_length << std::endl;
 			_file.seekg(0, std::ios::beg);
-			// _file.close();
 			return ;	
 		}
 	}
@@ -311,14 +290,12 @@ void	Response::match()
 
 void Response::generate_response()
 {
-	//std::string errors[7] = {"404, 301, 403, 500, 409, 204, 201"};
 	try 
 	{
 		if (status_code != 200)
 		{
 			_headers_status = true;
 			_body_status = true;
-			//std::cout << "here*****" << this->status_code << std::endl;
 			throw this->status_code;
 		}
 		if (_headers_status == false)
@@ -329,7 +306,6 @@ void Response::generate_response()
 				this->handle_get();
 			else if (this->_method == "DELETE")
 			{
-				std::cout << "in delete condition = " << this->req_uri << std::endl;
 				this->handle_delete(_dir, this->req_uri);	
 				throw 204;
 			}
@@ -343,8 +319,7 @@ void Response::generate_response()
 		_headers_status = true;
 		_body_status = true;
 		this->handle_err(err);
-		_file.close();
-		_file.clear();
+		Drop_file();
 	}
 	catch(std::exception &e)
 	{
@@ -419,7 +394,9 @@ std::string Response::set_head()
 	head += "Accept: */*\r\n";
 	head += "Date: " + ft_time() + "\r\n";
 	head += "Accept-Encoding: gzip, deflate, br\r\n";
+#if DEBUG	
 	std::cout << head << std::endl;
+#endif	
 	return (head);
 }
 
@@ -442,14 +419,14 @@ void	Response::handle_delete(DIR *dir, std::string req)
 		closedir(dir);
 		if (std::remove(req.c_str()))
 		{
-			std::cout << "here delete " << std::endl;
+			//std::cout << "here delete " << std::endl;
 			throw 403;
 		}
 		return ;		
 	}
 	else if (std::remove(req.c_str()))
 	{
-		std::cout << "req_uri in del = " << req << std::endl;
+		//std::cout << "req_uri in del = " << req << std::endl;
 		throw 403;
 	}					
 }
@@ -459,18 +436,15 @@ void	Response::handle_get()
 	if (_headers_status == false)
 	{
 		c = 0;
-		//std::cout << "here" << std::endl;
 		_headers_status = true;
 		this->_head = set_head() + "\r\n";
 		this->_res = this->_head;
-		//std::cout << this->_res << std::endl;
 		if (!_file.is_open())
 			throw 404;
 		return;
 	}
 	int j = 1024;
 	std::ifstream::pos_type l = j;
-	// _file.open(this->req_uri, std::ios::binary);
 	if (_body_status == false)
 	{
 		if (this->_content_length < l)
@@ -478,27 +452,29 @@ void	Response::handle_get()
 		else if (this->_content_length - c < l)
 		{
 			l = this->_content_length - c;
-			//std::cout << "changing l = " << _file.tellg();
 		}
-		// std::cout << "contrnrt len = " << this->_content_length << " " << c << std::eƒndl;
-		// std::cout << "9bl " << l << std::endl;
 		c += l;
 		std::vector<char> vec((int)l);
 		_file.read(&vec[0], (int)l);
-		// _file.close();
 		std::string res(vec.begin(), vec.end());
-		//std::cout << "b3d" << std::endl;
 		this->_res = res;
-		//std::cout << this->_res << std::endl;
 		if (l < j)
 		{
 			std::cout << this->req_uri << " finished con len = " << this->_content_length << " c = " << c << std::endl; 
 			this->_body_status = true;
-			//std::cout << this->_head << std::endl;
-			_file.close();
-			//_file.clear();
+			Drop_file();
 			if (this->auto_index)
 				std::remove(this->req_uri.c_str());
 		}
 	}	
 }
+
+void	Response::Drop_file()
+{
+	if (_file.is_open())
+	{
+		_file.close();
+		_file.clear();
+	}
+}
+

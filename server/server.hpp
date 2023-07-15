@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:59 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/14 10:06:33 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/15 08:26:43 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -84,6 +84,7 @@ class server
 		int			get_chunk_size(std::vector<char> &b);
 		bool		check_chunk_end(std::vector<char> &b);
 		ServerConfig get_config(std::string &host);
+		void			Drop_Response(int i);
 		// void		init_fd_set(void);
 };
 

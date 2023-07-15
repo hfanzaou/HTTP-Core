@@ -12,6 +12,9 @@
 #include <cstdio>
 #include <ctime>
 #include "../cgi/cgi.hpp"
+
+#define DEBUG false
+
 class Response {
 	protected :
 		request _req;
@@ -59,9 +62,9 @@ class Response {
 		void		handle_delete(DIR* dir, std::string rq);
 		void		check_method(const std::vector<std::string>& methods);
 		void		index_dir(DIR *dir, std::string& path);
-		//static void open(const );
-		std::string set_head();
-		std::ifstream& get_file();
+		std::string		set_head();
+		std::ifstream& 	get_file();
+		void			Drop_file();
 };
 
 enum
@@ -75,6 +78,10 @@ enum
 	IN_SERVERROR = 500,
 	CONFLICT = 409,
 	NOT_ALLOWED = 405,
+	BAD_REQUEST = 400,
+	LONG_URI = 414,
+	NOT_IMPLEM = 501,
+	FOUND = 302,
 };
 
 #endif
