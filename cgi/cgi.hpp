@@ -4,6 +4,13 @@
 #include "../request/request.hpp"
 #include <string.h>
 #include <fstream>
+#include <fcntl.h>
+#include <unistd.h>
+#include <string>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <stdio.h>
 
 class Cgi
 {
@@ -15,7 +22,7 @@ class Cgi
 
     public :
         Cgi(request& _req, std::string& path);
-        void    execute_cgi();
+        void    execute_cgi(int &status_code);
         char    **getEnv();
         const std::string& getCgiResponse() const;
 };

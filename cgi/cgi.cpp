@@ -1,11 +1,4 @@
 #include "cgi.hpp"
-#include <fcntl.h>
-#include <unistd.h>
-#include <string>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <stdio.h>
 
 Cgi::Cgi(request& _req, std::string& _path) : req(_req), path(_path)
 {}
@@ -21,9 +14,9 @@ char    **Cgi::getEnv()
     	_env["CONTENT_LENGTH"] = headers["Content-Length"];
 		_env["CONTENT_TYPE"] = headers["Content-Type"];
 	// }
-
+    _env["HTTP_COOKIE"] = headers["Cookie"];
     std::map<std::string, std::string>::iterator it;
-	char **env = new char*[5];
+	char **env = new char*[_env.size() + 1];
 	int i = 0;
 	for(it = _env.begin(); it != _env.end(); it++)
     {
@@ -37,11 +30,11 @@ char    **Cgi::getEnv()
 
 }
 
-void    Cgi::execute_cgi()
+void    Cgi::execute_cgi(int &status_code)
 {
     int pid;
     int fd[2];
-
+    (void)status_code;
     char    **env = getEnv();
     pipe(fd);
 
@@ -53,8 +46,8 @@ void    Cgi::execute_cgi()
 		dup2(fdin, 0);
         dup2(fd[1], 1);
         close(fd[1]);
-
-        execve(path.c_str(), nullptr, env);
+        char * const *nll = NULL;
+        execve(path.c_str(), nll, env);
         perror(NULL);
         std::cerr << "Error executing script" << std::endl;
     }
