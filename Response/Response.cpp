@@ -258,13 +258,18 @@ void	Response::match()
 		size_t pos = this->req_uri.find(".");
 		if (pos != std::string::npos && (req_uri.substr(pos + 1) == "py" || req_uri.substr(pos + 1) == "php"))
 		{
+			if (access(this->req_uri.c_str(), X_OK) == -1)
+				throw 403;
 			Drop_file();
 			Cgi cgi(_req, req_uri);
 			cgi.execute_cgi();
-			this->_content_length = cgi.getCgiResponse().length() - 29;
+			this->_content_length = cgi.getCgiResponse().length();
 			_cgi = true;
 			this->_head = set_head();
-			this->_res = this->_head + cgi.getCgiResponse();
+			this->_res = this->_head + "Content-type:text/html\r\n\r\n" + cgi.getCgiResponse();
+#if DEBUG			
+			std::cout << this->_res << std::endl;
+#endif			
 			this->_headers_status = true;
 			this->_body_status = true;
 			return;

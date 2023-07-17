@@ -5,9 +5,6 @@ import cgi
 form = cgi.FieldStorage()
 text = form.getvalue('text', '')
 
-# Print the HTTP response headers
-print("Content-type: text/html\r\n\r\n")
-
 # Print the HTML page
 print("""
 <!DOCTYPE html>

@@ -16,6 +16,7 @@ class Cgi
     public :
         Cgi(request& _req, const std::string& path);
         void    execute_cgi();
-        char    **getEnv();
+        char    **getPyEnv();
+		char	**getPHPEnv();
         const std::string& getCgiResponse() const;
 };

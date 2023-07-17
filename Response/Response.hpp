@@ -14,7 +14,7 @@
 #include <ctime>
 #include "../cgi/cgi.hpp"
 
-#define DEBUG false
+#define DEBUG true
 
 class Response {
 	protected :
