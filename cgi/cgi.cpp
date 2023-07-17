@@ -1,6 +1,6 @@
 #include "cgi.hpp"
 
-Cgi::Cgi(request& _req, std::string& _path) : req(_req), path(_path)
+Cgi::Cgi(request& _req, const std::string& _path) : req(_req), path(_path)
 {}
 
 char    **Cgi::getEnv()
@@ -39,7 +39,6 @@ void    Cgi::execute_cgi(int &status_code)
     pipe(fd);
 
 	int fdin = open("test", O_RDONLY);
-
     if ((pid = fork()) == 0)
     {
         close(fd[0]);
@@ -54,7 +53,8 @@ void    Cgi::execute_cgi(int &status_code)
     else
     {
         close(fd[1]);
-        waitpid(-1, NULL, 0);
+        if (waitpid(-1, NULL, 0))
+
         char buff[1024];
         int r = 1;
         while (r != 0)

@@ -17,7 +17,7 @@ class Cgi
     private :
         std::string                         cgi_response;
         request                             &req;
-		std::string 						path;
+		const std::string 					path;
         std::map<std::string, std::string>  _env;
 
     public :
