@@ -13,7 +13,7 @@ key = form.getvalue('key')
 value  = form.getvalue('value')
 cookie = cookies.SimpleCookie()
 cookie[key] = value
-# print("HTTP/1.1 204 OK\r\n")
+#print("HTTP/1.1 204 OK\r\n")
 print("Content-Type: text/plain")
 print(cookie.output())
 print("\r\n\r\n")

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   server.hpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:59 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/15 08:26:43 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/16 00:30:08 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,8 @@
 # include <cctype>
 # include <algorithm>
 # include "../ConfigParse/Config.hpp"
+# include "../ConfigParse/ServerConfig.hpp"
+# include "../ConfigParse/Location.hpp"
 # include "../Response/Response.hpp"
 # include "Socket.hpp"
 # include <cstdio>
@@ -43,21 +45,14 @@ class server
 		struct sockaddr_storage		acpt_addr;
 		int							acpt_len;
 		int							acpt_fd;
-		char						buff[1024];
+		char						buff[10240];
 		fd_set						read;
 		fd_set						write;
 		int							nfds;
 		std::vector<request>		reqs;
 		int							read_len;
 		Config						&config;
-		int							bytes_read;
-		std::string					hex;
-		bool						chunk;
-		// int 						content_len;
-		// size_t						chunkSize;
-		// std::vector<char>			chunk;
-		std::ofstream				*file;
-		std::map<int, Response*> response;
+		std::map<int, Response*>	response;
 	public	:
 		server(Config &c);
 
@@ -76,16 +71,12 @@ class server
 		int			find_req(int i);
 		void		erase_req(int i);
 		void		post(int fd, int j);
-		// void		handleChuncked(int fd, int ind);
-		// void		openFile(int fd);
 		void		drop_client(int i);
-		// int			read_chunkSize(int ind);
 		void		add_req(int s);
-		int			get_chunk_size(std::vector<char> &b);
-		bool		check_chunk_end(std::vector<char> &b);
-		ServerConfig get_config(std::string &host);
-		void			Drop_Response(int i);
-		// void		init_fd_set(void);
+		void		post_cl(int fd, int j);
+		void		post_ch(int fd, int j);
+		ServerConfig get_config(std::string &name, std::string& host);
+		void		Drop_Response(int i);
 };
 
 #endif

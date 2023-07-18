@@ -6,7 +6,7 @@
 /*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/15 21:05:41 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/13 13:23:24 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/15 19:51:45 by hfanzaou         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,8 @@ void	request::set_header(std::map<std::string, std::string> &h)
 
 void	request::print_all(void)
 {
+	std::cout << "Name        : " << name << std::endl;
+	std::cout << "Query       : " << query << std::endl;
 	std::cout << "Method      : " << method << std::endl;
 	std::cout << "Request_uri : " << request_uri << std::endl;
 	std::cout << "Http_version: " << http_version << std::endl;
@@ -120,6 +122,31 @@ std::string	&request::get_method(void)
 	return (method);
 }
 
+Post	&request::get_post(void)
+{
+	return (post);
+}
+
+std::string	&request::get_name(void)
+{
+	return (name);
+}
+
+std::string	&request::get_query(void)
+{
+	return (query);
+}
+
+void	request::set_name(std::string &n)
+{
+	name = n;
+}
+
+void	request::set_query(std::string &q)
+{
+	query = q;
+}
+
 std::string &request::get_uri()
 {
 	return (request_uri);
@@ -128,6 +155,7 @@ int request::get_status_code()
 {
 	return (status_code);
 }
+
 std::string	&request::get_host()
 {
 	return (host);

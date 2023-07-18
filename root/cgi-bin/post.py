@@ -5,6 +5,7 @@ import cgi
 form = cgi.FieldStorage()
 text = form.getvalue('text', '')
 
+
 # Print the HTML page
 print("""
 <!DOCTYPE html>

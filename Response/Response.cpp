@@ -2,13 +2,13 @@
 #include <unistd.h>
 //std::ifstream Response::_file;
 
-Response::Response(request req, const ServerConfig& config) : _req(req), _config(config), 
+Response::Response(request& req, const ServerConfig& config) : _req(req), _config(config), _method(req.get_method()),
 	_headers_status(false), _body_status(false), auto_index(false), _fd(req.get_fd()) , Allow_method(false), redirect(false), _cgi(false), _dir(NULL)
 {
 	//std::cout << _req << std::endl;
 	req_uri = _req.get_uri();
-	 std::cout << _req.get_fd() << " " << req_uri << std::endl;
-	_method = _req.get_method();
+	std::cout << "\033[1;32mREQUEST: \033[0m" << req.get_uri() << std::endl;
+	// std::cout << _req.get_fd() << " " << req_uri << std::endl;
 	status_code = _req.get_status_code();
 	// std::cout << "*****" << status_code << std::endl;
 	c = 0;
@@ -24,24 +24,19 @@ Response::Response(request req, const ServerConfig& config) : _req(req), _config
 // 	*this = obj;
 // }
 
-Response& Response::operator=(const Response& obj)
-{
-	//std::cout << "Copy assignement constructor called" << std::endl;
-	if (this != &obj)
-	{
-		this->_config = obj.get_servconfig();
-	}
-	return (*this);
-}
+// Response& Response::operator=(const Response& obj)
+// {
+// 	//std::cout << "Copy assignement constructor called" << std::endl;
+// 	if (this != &obj)
+// 	{
+// 		this->_config = obj.get_servconfig();
+// 	}
+// 	return (*this);
+// }
 
 Response::~Response()
 {
 	//std::cout << "Destructor called" << std::endl;
-}
-
-void	Response::set_servconfig(const ServerConfig& config)
-{
-	this->_config = config;
 }
 
 const  ServerConfig&	Response::get_servconfig() const
@@ -74,38 +69,6 @@ bool		Response::get_send_status()
 	return (this->_body_status);
 }
 
-std::string Response::generate_error(short error)
-{
-	switch(error)
-	{
-		case NOT_FOUND:
-			return ("404 Not Found");
-		case MV_PERM:
-			return ("301 Moved Permanently");
-		case FORBIDDEN:
-			return ("403 Forbidden"); 					
-		case CREATED:
-			return ("201 Created");
-		case NO_CONTENT:
-			return ("204 No Content");
-		case IN_SERVERROR:
-			return ("500 Internal Server Error");
-		case CONFLICT:
-			return ("409 Conflict");
-		case NOT_ALLOWED:
-			return ("405 Method Not Allowed");
-		case BAD_REQUEST:
-			return ("400 Bad Request");
-		case LONG_URI:
-			return ("414 URI Too Long");
-		case NOT_IMPLEM:
-			return ("501 Not Implemented");
-		case FOUND:
-			return ("302 Found");	
-	}
-	return ("200 OK");
-}
-
 void	Response::handle_err(int err)
 {
 	const std::map<short, std::string>& err_pages = _config.getErrorPages();
@@ -124,7 +87,7 @@ void	Response::handle_err(int err)
 		}
 		return;
 	}
-	std::string error(this->generate_error(err));
+	std::string error(generate_error(err));
 	if (err == 301 || err == 302)
 	{
 		this->_head = "HTTP/1.1 " + error + "\r\nLocation: " + this->req_uri;
@@ -163,29 +126,91 @@ void	Response::index_dir(DIR *dir, std::string& path)
 		throw 500;
 	}
 	struct dirent *reader;
-	file << "<!DOCTYPE html><html><body>";
+	file << "<!DOCTYPE html><html><head>";
+	file << "<meta charset=\"UTF-8\"><link rel=\"shortcut icon\" href=\"./.favicon.ico\">";
+	file << "<title>Directory Contents</title><link rel=\"stylesheet\" href=\"/style.css\"></head><body>";
+	file << "<h1 align=\"left\">" + _req.get_uri() + "</h1><div id = \"container\"><table>";
+	file << "<thead><tr><th>Filename</th><th>Size</th><th>Date Modified</th></tr></thead><tbody>";
 	std::string name;
+	std::string size;
+	std::string date = "";
 	while ((reader = readdir(dir)))
 	{
 		name = reader->d_name;
-		if (name != "0index.html")
-			file << "<a href=\"" + name + "\">" + name;
+		if (name == "0index.html")
+			continue;
+		file << "<tr><td><a href=\"" + name + "\">" + name;
 		DIR *dir;	
 		if ((dir = opendir((path + name).c_str())))
 		{
 			file << "/";
+			size = "--";
 			closedir(dir);
 		}
-		file << "<br></a>";	
+		else
+		{
+			std::ifstream file_size((path + name).c_str(), std::ifstream::ate);
+			if (file_size.tellg() > 1000000)
+			{
+				std::string temp = std::to_string((float)(file_size.tellg() / 1000000.00));
+				size = temp.substr(0, temp.length() - 4) + " MB";
+			}
+			else 
+			{
+				std::string temp = std::to_string((float)(file_size.tellg() / 1000.00));
+				size = temp.substr(0, temp.length() - 4) + " KB";
+			}	
+			file_size.close();
+			file_size.clear();
+		}
+		struct stat Info;
+		if (stat((path + name).c_str(), &Info) == 0)
+			date = std::ctime(&Info.st_mtime);
+		file << "</a></td>";
+		file << "<td><a>" + size + "</a></td>";
+		file << "<td><a>" + date + "</a></td></tr>";	
 	}	
-	file << "</body></html>";
+	file << "</tbody></table></div></body></html>";
 	this->req_uri = path + "0index.html";
 	file.close();
 }
-
+void	Response::handle_dir(std::vector<Location>::const_iterator& it, std::string& path1)
+{
+	if (path1.at(path1.length() - 1) != '/')
+	{
+		this->req_uri = path1;
+		closedir(_dir);
+		throw 301;
+	}
+	if (it->getIndex() != "")
+	{
+		//std::cout << "catch1" << std::endl;
+		this->index = this->req_uri + "/" + it->getIndex();
+		if (access((this->index).c_str(), F_OK) != -1)
+			this->req_uri = this->index;
+		else if (it->getAutoIndex())
+		{
+			this->index_dir(_dir, this->req_uri);
+			this->auto_index = true;
+		}	
+	}
+	else if (it->getAutoIndex())
+	{
+		//std::cout << "catch2" << std::endl;
+		this->index_dir(_dir, this->req_uri);
+		this->auto_index = true;
+	}
+	else
+	{
+		closedir(_dir);
+		throw 403;
+	}
+	closedir(_dir);
+}
 void	Response::match()
 {
 	const ServerConfig& config = Response::get_servconfig();
+	//std::cout << config.getHost() << std::endl;
 	const std::vector<Location>& Locations = config.getLocations();
 	std::string path;
 	std::string root;
@@ -226,61 +251,23 @@ void	Response::match()
 			return ;
 		}
 		if (_dir)
-		{
-			if (path1.at(path1.length() - 1) != '/')
-			{
-				this->req_uri = path1;
-				closedir(_dir);
-				throw 301;
-			}
-			if (it->getIndex() != "")
-			{
-				std::cout << "catch1" << std::endl;
-				this->index = this->req_uri + "/" + it->getIndex();
-				if (access((this->index).c_str(), F_OK) != -1)
-					this->req_uri = this->index;
-				else if (it->getAutoIndex())
-				{
-					this->index_dir(_dir, this->req_uri);
-					this->auto_index = true;
-				}	
-			}
-			else if (it->getAutoIndex())
-			{
-				std::cout << "catch2" << std::endl;
-				this->index_dir(_dir, this->req_uri);
-				this->auto_index = true;
-			}
-			else
-			{
-				closedir(_dir);
-				throw 403;
-			}
-			closedir(_dir);
-		}
+			this->handle_dir(it, path1);
 		Drop_file();
-		std::cout << this->req_uri << std::endl;
 		_file.open(this->req_uri, std::ifstream::binary | std::ifstream::ate);
-		std::cout << "file open =" << this->req_uri << std::endl;
 		if (!_file.is_open())
 			throw 403;
-		std::cout << "sub " << this->req_uri.substr(req_uri.length() - 4, req_uri.length()) << std::endl;	
-		if (this->req_uri.substr(req_uri.length() - 3, req_uri.length()) == ".py")
+		size_t pos = this->req_uri.find(".");
+		if (pos != std::string::npos && (req_uri.substr(pos + 1) == "py" || req_uri.substr(pos + 1) == "php"))
 		{
-			if (access(this->req_uri.c_str(), X_OK) == -1)
-				throw 403;
 			Drop_file();
 			Cgi cgi(_req, req_uri);
-			cgi.execute_cgi();
-			if (status_code != 200)
+			if((status_code = cgi.execute_cgi()) != 200)
 				throw status_code;
-			this->_content_length = cgi.getCgiResponse().length();
+			this->_content_length = cgi.getCgiResponse().length() - 29;
 			_cgi = true;
 			this->_head = set_head();
-			this->_res = this->_head + "Content-type:text/html\r\n\r\n" + cgi.getCgiResponse();
-#if DEBUG			
-			std::cout << this->_res << std::endl;
-#endif			
+			this->_res = this->_head + cgi.getCgiResponse();
+			std::cout << this->_res;
 			this->_headers_status = true;
 			this->_body_status = true;
 			return;
@@ -322,7 +309,7 @@ void Response::generate_response()
 	catch(int err)
 	{
 		this->status_code = err;
-		std::cout << this->_head << std::endl;
+		//std::cout << this->_head << std::endl;
 		_req.set_status_code(err);
 		_headers_status = true;
 		_body_status = true;
@@ -331,72 +318,26 @@ void Response::generate_response()
 	}
 	catch(std::exception &e)
 	{
-		std::cout << "execption = " << std::endl;
+		//std::cout << "execption = " << std::endl;
 	}
-}
-
-std::string get_file_type(std::string file)
-{
-	std::vector<std::string> types;
-	types.push_back("html");
-	types.push_back("htm");
-	types.push_back("shtml");
-	types.push_back("css");
-	types.push_back("text");
-	types.push_back("jpeg");
-	types.push_back("jpg");
-	types.push_back("png");
-	types.push_back("js");
-	types.push_back("json");
-	types.push_back("mp4");
-	types.push_back("webm");
-	std::vector<std::string> cont_types;
-	cont_types.push_back("text/html");
-	cont_types.push_back("text/html");
-	cont_types.push_back("text/html");
-	cont_types.push_back("text/css");
-	cont_types.push_back("text/plain");
-	cont_types.push_back("image/jpeg");
-	cont_types.push_back("image/jpeg");
-	cont_types.push_back("image/png");
-	cont_types.push_back("application/javascript");
-	cont_types.push_back("application/json");
-	cont_types.push_back("video/mp4");
-	cont_types.push_back("video/webm");
-	std::vector<std::string>::iterator it2 = cont_types.begin();
-	for (std::vector<std::string>::iterator it = types.begin(); it != types.end(); ++it)
+	if (_body_status)
 	{
-
-		if (file.substr(file.length() - it->length(), file.length()) == *it)
+		if (status_code == 200)
 		{
-			//std::cout << "file = "<< file << " it = " << *it << std::endl;
-			return (*it2);
+			std::cout << "\033[1;32mRESPONSE: \033[0m" << generate_error(status_code) << std::endl;;
+			//std::cout << " GET "<<_req.get_uri() << std::endl;
 		}
-		++it2;	
+		else
+			std::cout << "\033[31mRESPONSE: \033[0m" << generate_error(status_code) << std::endl;
 	}
-	return ("application/octet-stream");
 }
 
-
-std::string ft_time()
-{
-	std::time_t Time = std::time(NULL);
-	std::istringstream date(std::ctime(&Time));
-	std::string day;
-	std::string daym;
-	std::string month;
-	std::string year;
-	std::string time;
-	date >> day >> month >> daym >> time >> year;
-
-	return (day + ", " + daym + " " + month + " " + year + " " + time + " GMT");
-}
 std::string Response::set_head()
 {
 	std::string head = "";
-	//std::map<std::string, std::string>& header = _req.get_header();
 	head += "HTTP/1.1 " + std::to_string(this->status_code) + "\r\n";
-	head += "Content-Type: " + get_file_type(this->req_uri) + "\r\n";
+	if (!_cgi)
+		head += "Content-Type: " + get_type(this->req_uri) + "\r\n";
 	head += "Content-Length: " + std::to_string(this->_content_length) + "\r\n";
 	head += "Cache-Control: no-cache\r\n";
 	head += "Accept: */*\r\n";
@@ -426,17 +367,11 @@ void	Response::handle_delete(DIR *dir, std::string req)
 		}
 		closedir(dir);
 		if (std::remove(req.c_str()))
-		{
-			//std::cout << "here delete " << std::endl;
 			throw 403;
-		}
 		return ;		
 	}
 	else if (std::remove(req.c_str()))
-	{
-		//std::cout << "req_uri in del = " << req << std::endl;
-		throw 403;
-	}					
+		throw 403;				
 }
 
 void	Response::handle_get()
@@ -468,7 +403,6 @@ void	Response::handle_get()
 		this->_res = res;
 		if (l < j)
 		{
-			std::cout << this->req_uri << " finished con len = " << this->_content_length << " c = " << c << std::endl; 
 			this->_body_status = true;
 			Drop_file();
 			if (this->auto_index)
