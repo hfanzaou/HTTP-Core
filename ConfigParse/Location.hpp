@@ -6,7 +6,7 @@
 /*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 21:59:13 by ajana             #+#    #+#             */
-/*   Updated: 2023/07/14 06:03:25 by ajana            ###   ########.fr       */
+/*   Updated: 2023/07/14 07:26:45 by ajana            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -48,6 +48,7 @@ class Location
 		const std::vector<std::string>& getMethods() const;
 		bool	getAutoIndex() const;
 
+		void	checkLocation() const;
 		void	printLocation() const;
 };
 

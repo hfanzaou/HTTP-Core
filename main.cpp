@@ -10,6 +10,8 @@ int main(int ac, char **av)
 		server	server(config);
 
 		config.parse();
+		config.printServers();
+		// exit(0);
 		for (size_t i = 0; i < config.getServers().size(); i++)
 		{
 			// std::cout << "ok" << std::endl;

@@ -45,9 +45,9 @@ class server
 		struct sockaddr_storage		acpt_addr;
 		int							acpt_len;
 		int							acpt_fd;
-		char						buff[10240];
+		char						buff[70000];
 		fd_set						read;
-		fd_set						write;
+		fd_set						writ;
 		int							nfds;
 		std::vector<request>		reqs;
 		int							read_len;
@@ -75,8 +75,9 @@ class server
 		void		add_req(int s);
 		void		post_cl(int fd, int j);
 		void		post_ch(int fd, int j);
-		ServerConfig get_config(std::string &name, std::string& host);
+		ServerConfig &get_config(std::string &host, std::string& name);
 		void		Drop_Response(int i);
+		void		open_file(int fd);
 };
 
 #endif

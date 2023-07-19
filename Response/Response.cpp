@@ -106,6 +106,7 @@ void	Response::check_method(const std::vector<std::string>& methods)
 {
 	for (std::vector<std::string>::const_iterator it2 = methods.cbegin(); it2 != methods.cend(); ++it2)
 	{
+		std::cout <<  "it =" << *it2 << std::endl;
 		if (this->_method == *it2)
 		{
 			this->Allow_method = true;
@@ -114,6 +115,7 @@ void	Response::check_method(const std::vector<std::string>& methods)
 	}
 	if (this->_method != "POST" && this->_method != "DELETE" && this->_method != "GET")
 		throw 501;
+	std::cout << _method << std::endl;	
 	throw 405;
 }
 
@@ -227,6 +229,8 @@ void	Response::match()
 		std::string path1 = this->req_uri;	
 		root = it->getroot();
 		path = this->req_uri.substr(it->getPath().length(), this->req_uri.length());
+		while (path.substr(0, 3) == "../")
+			path = path.substr(3);
 #if DEBUG
 
 		std::cout << "final = " << root + path << std::endl;
@@ -261,12 +265,17 @@ void	Response::match()
 		{
 			Drop_file();
 			Cgi cgi(_req, req_uri);
-			if((status_code = cgi.execute_cgi()) != 200)
+			status_code = cgi.execute_cgi();
+			std::cout << status_code << std::endl;
+			if (status_code != 200)
+			{
+				std::cout << status_code << std::endl;
 				throw status_code;
+			}
 			this->_content_length = cgi.getCgiResponse().length() - 29;
 			_cgi = true;
 			this->_head = set_head();
-			this->_res = this->_head + cgi.getCgiResponse();
+			this->_res = cgi.getCgiResponse();
 			std::cout << this->_res;
 			this->_headers_status = true;
 			this->_body_status = true;
@@ -324,7 +333,7 @@ void Response::generate_response()
 	{
 		if (status_code == 200)
 		{
-			std::cout << "\033[1;32mRESPONSE: \033[0m" << generate_error(status_code) << std::endl;;
+			std::cout << "\033[1;32mRESPONSE: \033[0m 200 OK"<< std::endl;;
 			//std::cout << " GET "<<_req.get_uri() << std::endl;
 		}
 		else
@@ -335,9 +344,11 @@ void Response::generate_response()
 std::string Response::set_head()
 {
 	std::string head = "";
-	head += "HTTP/1.1 " + std::to_string(this->status_code) + "\r\n";
 	if (!_cgi)
+	{
+		head += "HTTP/1.1 " + std::to_string(this->status_code) + "\r\n";
 		head += "Content-Type: " + get_type(this->req_uri) + "\r\n";
+	}
 	head += "Content-Length: " + std::to_string(this->_content_length) + "\r\n";
 	head += "Cache-Control: no-cache\r\n";
 	head += "Accept: */*\r\n";

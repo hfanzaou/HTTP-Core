@@ -3,13 +3,12 @@
 /*                                                        :::      ::::::::   */
 /*   request.hpp                                        :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/15 21:05:30 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/15 19:26:20 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/17 08:43:45 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
-
 
 #ifndef REQUEST_HPP
 # define REQUEST_HPP

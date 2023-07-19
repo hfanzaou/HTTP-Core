@@ -13,7 +13,7 @@ int main(int ac, char **av)
 		config.parse();
 
 		config.printServers();
-		
+
 	}
 	catch (std::exception &e)
 	{

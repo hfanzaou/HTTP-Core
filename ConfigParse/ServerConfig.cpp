@@ -6,13 +6,13 @@
 /*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 22:17:38 by ajana             #+#    #+#             */
-/*   Updated: 2023/07/14 05:53:44 by ajana            ###   ########.fr       */
+/*   Updated: 2023/07/14 07:15:36 by ajana            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ServerConfig.hpp"
 
-ServerConfig::ServerConfig() : host(""), MaxBodySize(0)
+ServerConfig::ServerConfig() : MaxBodySize(-1)
 {}
 
 bool	isValidHost(const std::string& host)
@@ -78,6 +78,12 @@ void	ServerConfig::addErrorPage(std::istringstream& lineStream)
 		throw std::runtime_error("Invalid error page path");
 	}
 	err_pages[err_num] = err_page;
+}
+
+void	ServerConfig::checkServer() const
+{
+	if (port.empty() || host.empty())
+		throw std::runtime_error("Server port or host is missing!");
 }
 
 const std::string& ServerConfig::getHost() const { return host; }

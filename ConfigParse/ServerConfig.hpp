@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   ServerConfig.hpp                                   :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 21:58:22 by ajana             #+#    #+#             */
-/*   Updated: 2023/07/14 06:14:14 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/14 07:15:58 by ajana            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -42,8 +42,8 @@ class ServerConfig
 		const std::vector<std::string>&	getServerNames() const;
 		unsigned long					getMaxBodySize() const;
 		const std::vector<Location>&	getLocations() const;
+		void							checkServer() const;
 		const std::map<short, std::string>& getErrorPages() const;
-		bool	checkServer();
 
 		void	printServer() const;
 };

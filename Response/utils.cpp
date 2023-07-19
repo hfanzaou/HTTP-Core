@@ -80,6 +80,8 @@ std::string generate_error(short error)
 			return ("501 Not Implemented");
 		case FOUND:
 			return ("302 Found");	
+		case 502:
+			return ("502 Bad Gateway");
 	}
-	return ("200 OK");
+	return ("500 Internal Server Error");
 }

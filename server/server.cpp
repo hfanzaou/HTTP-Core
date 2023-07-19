@@ -15,11 +15,12 @@
 server::server(Config &c) : config(c)
 {
 	FD_ZERO(&read);
-	FD_ZERO(&write);
+	FD_ZERO(&writ);
 }
 
 void	server::init_server(ServerConfig &s)
 {
+	(void)config;
 	hostname = s.getHost();
 	servname = s.getPort();
 	memset(&hints, 0, sizeof(hints));
@@ -59,14 +60,14 @@ void	server::start_server(void)
 	if (bind(s, res->ai_addr, res->ai_addrlen))
 		return ;
 	freeaddrinfo(res);
-	if (listen(s, 10))
+	if (listen(s, 128))
 	{
 		std::cerr << "Error : listen!" << std::endl;
 		return ;
 	}
 	std::cout << "\033[1;31mSERVER " << hostname << ":" << servname << " IS LISTENING" << "\033[0m" << std::endl;
 	FD_SET(s, &read);
-	FD_SET(s, &write);
+	FD_SET(s, &writ);
 	if (nfds < s)
 		nfds = s;
 	sock_fd.push_back(s);
@@ -88,7 +89,7 @@ void	server::multiplex_server(void)
 		FD_ZERO(&tmp_r);
 		FD_ZERO(&tmp_w);
 		tmp_r = read;
-		tmp_w = write;
+		tmp_w = writ;
 		if (select((nfds + 1), &tmp_r, &tmp_w, NULL, &tv) == -1)
 		{
 			std::cerr << "Error : select!" << std::endl;
@@ -116,16 +117,16 @@ void	server::multiplex_server(void)
 					{
 						std::cout << "ok" <<std::endl;
 						Drop_Response(i);
-						this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], config.getServers()[0])));
+						this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host(), reqs[find_req(i)].get_name()))));
 					}
-					FD_SET(i, &write);
+					FD_SET(i, &writ);
 				}
 			}
 			else if (FD_ISSET(i, &tmp_w))
 			{
 				if (this->response.find(i) == this->response.end())
 				{
-					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], config.getServers()[0])));
+					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host(), reqs[find_req(i)].get_name()))));
 					//reqs[find_req(i)].print_all();
 				}
 				write_server(i);
@@ -147,12 +148,14 @@ void	server::accept_server(int s)
 
 bool	server::read_server(int i)
 {
-	if ((read_len = recv(i, buff, 10240, 0)) < 1)
+	if ((read_len = recv(i, buff, 70000, 0)) < 1)
 	{
 		std::cerr << "Error : recv!" << std::endl;
 		if (this->response.find(i) != this->response.end())
+		{
 			Drop_Response(i);
-			//this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_name()))));
+			//this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
+		}
 		drop_client(i);
 		return (false);
 	}
@@ -348,7 +351,7 @@ void	server::drop_client(int i)
 {
 	close(i);
 	FD_CLR(i, &read);
-	FD_CLR(i, &write);
+	FD_CLR(i, &writ);
 	erase_req(i);
 }
 
@@ -374,23 +377,20 @@ void	server::add_req(int s)
 
 void	server::post_cl(int fd, int j)
 {
-	if (reqs[find_req(fd)].get_post().get_i() == 0)
+	if (reqs[find_req(fd)].get_post().get_file() == 0)
 	{
 		int	tmp;
 
-		reqs[find_req(fd)].get_post().set_file("test");
+		open_file(fd);
 		std::stringstream(reqs[find_req(fd)].get_header()["Content-Length"]) >> tmp;
 		reqs[find_req(fd)].get_post().set_i(tmp);
-		reqs[find_req(fd)].get_post().get_file().rdbuf()->pubsetbuf(nullptr, reqs[find_req(fd)].get_post().get_i());
 	}
+	write(reqs[find_req(fd)].get_post().get_file(), &buff[j], reqs[find_req(fd)].get_post().get_bytes_read());
 	reqs[find_req(fd)].get_post().set_i(reqs[find_req(fd)].get_post().get_i() - reqs[find_req(fd)].get_post().get_bytes_read());
-	reqs[find_req(fd)].get_post().get_file().write(&buff[j], reqs[find_req(fd)].get_post().get_bytes_read());
 	reqs[find_req(fd)].get_post().set_bytes_read(0);
 	if (reqs[find_req(fd)].get_post().get_i() == 0)
 	{
-		reqs[find_req(fd)].get_post().get_file().close();
-		reqs[find_req(fd)].get_post().get_file().clear();
-		reqs[find_req(fd)].get_post().delete_file();
+		close(reqs[find_req(fd)].get_post().get_file());
 		reqs[find_req(fd)].set_req_b(true);
 		return ;
 	}
@@ -398,71 +398,84 @@ void	server::post_cl(int fd, int j)
 
 void	server::post_ch(int fd, int j)
 {
-	if (!reqs[find_req(fd)].get_post().get_file_open())
-	{
-		reqs[find_req(fd)].get_post().set_file("/goinfre/ebensalt/test");
-		if (reqs[find_req(fd)].get_post().get_file().is_open())
-			reqs[find_req(fd)].get_post().set_file_open(true);
-	}
+	if (reqs[find_req(fd)].get_post().get_file() == 0)
+		open_file(fd);
 	for (;j < read_len; j++)
 		reqs[find_req(fd)].get_post().get_body().push_back(buff[j]);
-	if (!reqs[find_req(fd)].get_post().get_exp())
-	{
-		if (reqs[find_req(fd)].get_post().get_body()[0] == '\r')
-			reqs[find_req(fd)].get_post().get_body().erase(reqs[find_req(fd)].get_post().get_body().begin(), reqs[find_req(fd)].get_post().get_body().begin() + 2);
-		else
-			reqs[find_req(fd)].get_post().get_body().erase(reqs[find_req(fd)].get_post().get_body().begin());
-		reqs[find_req(fd)].get_post().set_exp(true);
-	}
 	if (!reqs[find_req(fd)].get_post().get_chunk_size())
+	{
 		while (!reqs[find_req(fd)].get_post().get_body().empty())
 		{
-			if (reqs[find_req(fd)].get_post().get_body().size() > 1 && reqs[find_req(fd)].get_post().get_body()[0] == '\r' && reqs[find_req(fd)].get_post().get_body()[1] == '\n')
+			if (reqs[find_req(fd)].get_post().get_body()[0] == '\r')
 			{
+				reqs[find_req(fd)].get_post().get_body().erase(reqs[find_req(fd)].get_post().get_body().begin());
+				reqs[find_req(fd)].get_post().set_bytes_read(reqs[find_req(fd)].get_post().get_bytes_read() - 1);
+				continue ;
+			}
+			if (reqs[find_req(fd)].get_post().get_body()[0] == '\n')
+			{
+				reqs[find_req(fd)].get_post().get_body().erase(reqs[find_req(fd)].get_post().get_body().begin());
+				reqs[find_req(fd)].get_post().set_bytes_read(reqs[find_req(fd)].get_post().get_bytes_read() - 1);
 				reqs[find_req(fd)].get_post().set_chunk_size(std::strtol(reqs[find_req(fd)].get_post().get_hex().c_str(), NULL, 16));
+				reqs[find_req(fd)].get_post().get_hex().clear();
 				if (!reqs[find_req(fd)].get_post().get_chunk_size())
 				{
-					reqs[find_req(fd)].get_post().get_file().close();
-					reqs[find_req(fd)].get_post().get_file().clear();
-					reqs[find_req(fd)].get_post().delete_file();
+					close(reqs[find_req(fd)].get_post().get_file());
 					reqs[find_req(fd)].set_req_b(true);
 					return ;
 				}
-				reqs[find_req(fd)].get_post().get_hex().clear();
-				reqs[find_req(fd)].get_post().get_body().erase(reqs[find_req(fd)].get_post().get_body().begin(), reqs[find_req(fd)].get_post().get_body().begin() + 2);
-				reqs[find_req(fd)].get_post().set_bytes_read(reqs[find_req(fd)].get_post().get_bytes_read() - 2);
-				break ;
+				else
+					break ;
 			}
-			else if (reqs[find_req(fd)].get_post().get_body().size() == 1 && reqs[find_req(fd)].get_post().get_body()[0] == '\r')
-				break ;
 			reqs[find_req(fd)].get_post().set_hex(reqs[find_req(fd)].get_post().get_hex() + reqs[find_req(fd)].get_post().get_body()[0]);
 			reqs[find_req(fd)].get_post().get_body().erase(reqs[find_req(fd)].get_post().get_body().begin());
 			reqs[find_req(fd)].get_post().set_bytes_read(reqs[find_req(fd)].get_post().get_bytes_read() - 1);
-
 		}
-	if (reqs[find_req(fd)].get_post().get_bytes_read() && reqs[find_req(fd)].get_post().get_i() > reqs[find_req(fd)].get_post().get_bytes_read())
-	{
-		reqs[find_req(fd)].get_post().set_i(reqs[find_req(fd)].get_post().get_i() - reqs[find_req(fd)].get_post().get_bytes_read());
-		reqs[find_req(fd)].get_post().set_bytes_read(0);
 	}
-	else if (reqs[find_req(fd)].get_post().get_chunk_size())
+	if (reqs[find_req(fd)].get_post().get_chunk_size())
 	{
-		reqs[find_req(fd)].get_post().get_file().write(&reqs[find_req(fd)].get_post().get_body()[0], reqs[find_req(fd)].get_post().get_chunk_size());
-		reqs[find_req(fd)].get_post().get_body().erase(reqs[find_req(fd)].get_post().get_body().begin(), reqs[find_req(fd)].get_post().get_body().begin() + reqs[find_req(fd)].get_post().get_chunk_size());
-		reqs[find_req(fd)].get_post().set_bytes_read(reqs[find_req(fd)].get_post().get_bytes_read() - reqs[find_req(fd)].get_post().get_i());
-		reqs[find_req(fd)].get_post().set_chunk_size(0);
-		if (reqs[find_req(fd)].get_post().get_body().size() > 1)
+		if (reqs[find_req(fd)].get_post().get_i() + 2 >= reqs[find_req(fd)].get_post().get_bytes_read())
 		{
-			reqs[find_req(fd)].get_post().get_body().erase(reqs[find_req(fd)].get_post().get_body().begin(), reqs[find_req(fd)].get_post().get_body().begin() + 2);
-			reqs[find_req(fd)].get_post().set_bytes_read(reqs[find_req(fd)].get_post().get_bytes_read() - 2);
+			reqs[find_req(fd)].get_post().set_i(reqs[find_req(fd)].get_post().get_i() - reqs[find_req(fd)].get_post().get_bytes_read());
+			reqs[find_req(fd)].get_post().set_bytes_read(0);
 		}
 		else
-			reqs[find_req(fd)].get_post().set_exp(false);
-		post_ch(fd, j);
+		{
+			write(reqs[find_req(fd)].get_post().get_file(), &reqs[find_req(fd)].get_post().get_body()[0], reqs[find_req(fd)].get_post().get_chunk_size());
+			reqs[find_req(fd)].get_post().get_body().erase(reqs[find_req(fd)].get_post().get_body().begin(), reqs[find_req(fd)].get_post().get_body().begin() + reqs[find_req(fd)].get_post().get_chunk_size() + 2);
+			reqs[find_req(fd)].get_post().set_bytes_read(reqs[find_req(fd)].get_post().get_bytes_read() - reqs[find_req(fd)].get_post().get_i() - 2);
+			reqs[find_req(fd)].get_post().set_chunk_size(0);
+			post_ch(fd, j);
+		}
 	}
 }
 
-ServerConfig server::get_config(std::string &name, std::string &host)
+void	server::open_file(int fd)
+{
+	std::string			file_name = "test";
+	
+	// std::srand(static_cast<unsigned int>(std::time(0)));
+	// static int			i = std::rand() % 10000;
+	// std::stringstream	ss0;
+
+	// ss0 << i;
+	// file_name += ss0.str();
+	// if (reqs[find_req(fd)].get_header().find("Content-Type") != reqs[find_req(fd)].get_header().end())
+	// {
+	// 	file_name += '.';
+	// 	std::stringstream	ss(reqs[find_req(fd)].get_header().find("Content-Type")->second);
+	// 	std::string			ex;
+
+	// 	getline(ss, ex, '/');
+	// 	getline(ss, ex);
+	// 	file_name += ex;
+	// }
+	// i++;
+	reqs[find_req(fd)].get_post().set_file(open(file_name.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0644));
+}
+
+
+ServerConfig& server::get_config(std::string &name, std::string &host)
 {
 	std::vector<ServerConfig>& configs = config.getServers();
 	for (std::vector<ServerConfig>::iterator it = configs.begin(); it != configs.end(); ++it)

@@ -7,7 +7,7 @@ std::string    getHeaderValue(std::map<std::string, std::string>& headers, const
     return "";
 }
 
-Cgi::Cgi(request& req, const std::string& path) : cgi_response(""), _req(req), _path(path), _status(0)
+Cgi::Cgi(request& req, const std::string& path) : _req(req), _path(path), _status(0)
 {}
 
 char    **Cgi::getEnv()
@@ -68,6 +68,7 @@ int Cgi::execute_cgi()
 
         char * const * nll = NULL;
         execve(_path.c_str(), nll, env);
+        std::cout << "aywaaa" << std::endl;
         std::cerr << strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -91,7 +92,7 @@ int Cgi::execute_cgi()
             }
             else
             {
-                if (WEXITSTATUS(_status) == EXIT_FAILURE)
+                if (WEXITSTATUS(_status) != EXIT_SUCCESS)
                     return 500;
                 break;
             }
@@ -111,7 +112,7 @@ int Cgi::execute_cgi()
     // for (size_t i = 0; i < _env.size() + 1; i++)
     //     delete env[i];
     // delete env;
-    std::cout << "Cgi Response:" << cgi_response << std::endl;
+    std::cout << "Cgi Response:\n" << cgi_response << std::endl;
     return 200;
 }
 

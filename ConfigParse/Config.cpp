@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/05 16:41:53 by ajana             #+#    #+#             */
-/*   Updated: 2023/07/14 10:33:42 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/14 07:19:08 by ajana            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -53,6 +53,7 @@ Location	parseLocationContext(std::istringstream& lineStream, std::string& conte
 		else
 			throw std::runtime_error("Invalid identifier inside location context!");
 	}
+	location.checkLocation();
 	return (location);
 }
 
@@ -92,6 +93,7 @@ ServerConfig parseServerContext(std::string& context)
 			throw std::runtime_error("Invalid identifier inside server context!");
 		}
 	}
+	server.checkServer();
     return server;
 }
 
@@ -176,7 +178,6 @@ void	Config::parse()
 	for (size_t i = 0; i < serverBlocks.size(); ++i) {
 		servers.push_back(parseServerContext(serverBlocks[i]));
 	}
-	// checkServer();
 }
 
 std::vector<ServerConfig>&	Config::getServers() { return servers; }

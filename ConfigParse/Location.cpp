@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+        */
+/*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 22:26:31 by ajana             #+#    #+#             */
-/*   Updated: 2023/07/14 10:39:32 by hfanzaou         ###   ########.fr       */
+/*   Updated: 2023/07/14 07:26:50 by ajana            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,15 +20,8 @@ void	Location::setPath(std::istringstream& lineStream)
 
 void	Location::setRoot(std::istringstream& lineStream)
 {
-	DIR *dir = NULL;
-	if (!(lineStream >> root) || (!lineStream.eof()) || !(dir = opendir(root.c_str())))
-	{
-		if (dir)
-			closedir(dir);	
+	if (!(lineStream >> root) || (!lineStream.eof()) || (!opendir(root.c_str())))
 		throw std::runtime_error("Invalid location root");
-	}
-	if (dir)
-		closedir(dir);	
 }
 
 void	Location::setIndex(std::istringstream& lineStream) {
@@ -68,6 +61,15 @@ void	Location::setUploadPath(std::istringstream& lineStream)
 {
 	if (!(lineStream >> upload_path) || !lineStream.eof())
 		throw std::runtime_error("Invalid redirection");
+}
+
+void	Location::checkLocation() const
+{
+	if (root.empty())
+		throw std::runtime_error("Location root missing!");
+	else if (path.empty())
+		throw std::runtime_error("Location path missing!");
+	// else if (methods.)
 }
 
 const std::string&	Location::getPath() const { return path; }

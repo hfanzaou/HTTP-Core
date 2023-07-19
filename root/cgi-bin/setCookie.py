@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#!/usr/bin/python3
 
 import os
 from http import cookies
@@ -13,7 +13,6 @@ key = form.getvalue('key')
 value  = form.getvalue('value')
 cookie = cookies.SimpleCookie()
 cookie[key] = value
-#print("HTTP/1.1 204 OK\r\n")
-print("Content-Type: text/plain")
+print("HTTP/1.1 204 OK")
 print(cookie.output())
 print("\r\n\r\n")
