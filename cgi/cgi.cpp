@@ -47,7 +47,6 @@ int Cgi::execute_cgi(std::string filename)
     int pid;
     int fd[2];
 
-    char    **env = getEnv();
     if (pipe(fd) == -1)
     {
         std::cerr << "pipe failed!" << std::endl;
@@ -60,6 +59,7 @@ int Cgi::execute_cgi(std::string filename)
     }
     else if (pid == 0)
     {
+        char    **env = getEnv();
 	    int fdin = open(filename.c_str(), O_RDONLY);
         close(fd[0]);
 		dup2(fdin, 0);
@@ -68,7 +68,6 @@ int Cgi::execute_cgi(std::string filename)
 
         char * const * nll = NULL;
         execve(_path.c_str(), nll, env);
-       // std::cout << "aywaaa" << std::endl;
         std::cerr << strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
