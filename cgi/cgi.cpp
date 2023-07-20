@@ -42,7 +42,7 @@ char    **Cgi::getEnv()
 
 }
 
-int Cgi::execute_cgi()
+int Cgi::execute_cgi(std::string filename)
 {
     int pid;
     int fd[2];
@@ -60,7 +60,7 @@ int Cgi::execute_cgi()
     }
     else if (pid == 0)
     {
-	    int fdin = open("test", O_RDONLY);
+	    int fdin = open(filename.c_str(), O_RDONLY);
         close(fd[0]);
 		dup2(fdin, 0);
         dup2(fd[1], 1);
@@ -68,7 +68,7 @@ int Cgi::execute_cgi()
 
         char * const * nll = NULL;
         execve(_path.c_str(), nll, env);
-        std::cout << "aywaaa" << std::endl;
+       // std::cout << "aywaaa" << std::endl;
         std::cerr << strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }
@@ -112,7 +112,7 @@ int Cgi::execute_cgi()
     // for (size_t i = 0; i < _env.size() + 1; i++)
     //     delete env[i];
     // delete env;
-    std::cout << "Cgi Response:\n" << cgi_response << std::endl;
+   // std::cout << "Cgi Response:\n" << cgi_response << std::endl;
     return 200;
 }
 

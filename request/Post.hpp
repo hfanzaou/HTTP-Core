@@ -6,7 +6,7 @@
 /*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/14 10:07:32 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/18 07:57:27 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/07/20 03:37:56 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -26,6 +26,8 @@ class Post
 		int					chunk_size;
 		bool				exp;
 		int					file;
+		unsigned long		body_size;
+		std::string			file_name;
 	public	:
 		Post(void);
 
@@ -42,6 +44,10 @@ class Post
 		void				set_exp(bool f);
 		int					get_file(void);
 		void				set_file(int f);
+		unsigned long		get_body_size(void);
+		void				set_body_size(unsigned long u);
+		std::string			get_file_name(void);
+		void				set_file_name(std::string f);
 };
 
 #endif

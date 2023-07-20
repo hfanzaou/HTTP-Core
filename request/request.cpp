@@ -6,7 +6,7 @@
 /*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/15 21:05:41 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/17 09:00:26 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/07/20 00:39:33 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -147,16 +147,16 @@ void	request::set_query(std::string &q)
 	query = q;
 }
 
-std::string &request::get_uri()
+std::string &request::get_uri(void)
 {
 	return (request_uri);
 }
-int request::get_status_code()
+int request::get_status_code(void)
 {
 	return (status_code);
 }
 
-std::string	&request::get_host()
+std::string	&request::get_host(void)
 {
 	return (host);
 }

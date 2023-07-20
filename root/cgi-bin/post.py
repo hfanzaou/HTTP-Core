@@ -4,7 +4,7 @@ import cgi
 # Retrieve the form data
 form = cgi.FieldStorage()
 text = form.getvalue('text', '')
-print("HTTP/1.1 200 OK")
+print("HTTP/1.1 201 OK")
 # Print the HTML page
 print("""
 <!DOCTYPE html>

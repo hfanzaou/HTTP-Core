@@ -6,13 +6,13 @@
 /*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/07/14 10:07:43 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/18 07:57:06 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/07/20 03:38:54 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "Post.hpp"
 
-Post::Post(void) : i(0), bytes_read(0), chunk_size(0), exp(true), file(0) {}
+Post::Post(void) : i(0), bytes_read(0), chunk_size(0), exp(true), file(0), body_size(0) {}
 
 int	Post::get_i(void)
 {
@@ -78,4 +78,24 @@ int	Post::get_file(void)
 void	Post::set_file(int f)
 {
 	file = f;
+}
+
+unsigned long	Post::get_body_size(void)
+{
+	return (body_size);
+}
+
+void	Post::set_body_size(unsigned long u)
+{
+	body_size = u;
+}
+
+std::string	Post::get_file_name(void)
+{
+	return (file_name);
+}
+
+void	Post::set_file_name(std::string f)
+{
+	file_name = f;
 }

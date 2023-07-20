@@ -25,7 +25,7 @@ class Cgi
 
     public :
         Cgi(request& _req, const std::string& path);
-        int                 execute_cgi();
+        int                 execute_cgi(std::string filename);
         char                **getEnv();
         const std::string&  getCgiResponse() const;
 };

@@ -6,7 +6,7 @@
 /*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:59 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/16 00:30:08 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/07/20 03:39:18 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,7 +35,9 @@ class server
 	private	:
 		std::string					hostname;
 		std::string					servname;
+		//
 		std::vector<std::string>	name;
+		//
 		struct addrinfo				hints;
 		struct addrinfo				*res;
 		std::vector<int>			sock_fd;
@@ -78,6 +80,7 @@ class server
 		ServerConfig &get_config(std::string &host, std::string& name);
 		void		Drop_Response(int i);
 		void		open_file(int fd);
+		unsigned long	get_body_size(int fd);
 };
 
 #endif

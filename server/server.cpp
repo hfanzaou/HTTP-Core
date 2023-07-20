@@ -6,7 +6,7 @@
 /*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:46 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/17 09:04:22 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/07/20 03:47:10 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -47,6 +47,7 @@ void	server::start_server(void)
 		std::cerr << "Error : socket!" << std::endl;
 		return ;
 	}
+	signal(SIGPIPE, SIG_IGN);
 	if (fcntl(s, F_SETFL, O_NONBLOCK) == -1)
 	{
 		std::cerr << "Error : fcntl!" << std::endl;
@@ -115,9 +116,9 @@ void	server::multiplex_server(void)
 				{
 					if (this->response.find(i) != this->response.end())
 					{
-						std::cout << "ok" <<std::endl;
+						//std::cout << "ok" <<std::endl;
 						Drop_Response(i);
-						this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host(), reqs[find_req(i)].get_name()))));
+						//this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host(), reqs[find_req(i)].get_name()))));
 					}
 					FD_SET(i, &writ);
 				}
@@ -126,6 +127,7 @@ void	server::multiplex_server(void)
 			{
 				if (this->response.find(i) == this->response.end())
 				{
+					std::cout << "\033[1;32mREQUEST: \033[0m" << reqs[find_req(i)].get_method() << " " << reqs[find_req(i)].get_uri() << std::endl;
 					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host(), reqs[find_req(i)].get_name()))));
 					//reqs[find_req(i)].print_all();
 				}
@@ -179,6 +181,10 @@ void	server::write_server(int i)
 	}
 	if (response[i]->get_send_status())
 	{
+		if (response[i]->get_code() == 200)
+			std::cout << "\033[1;32mRESPONSE:\033[0m 200 OK"<< std::endl;
+		else
+			std::cout << "\033[31mRESPONSE: \033[0m" << generate_error(response[i]->get_code()) << std::endl;
 		Drop_Response(i);
 		drop_client(i);
 	}
@@ -278,11 +284,15 @@ int	server::parse_header(int i)
 		{
 			reqs[find_req(i)].set_req_h(true);
 			check_header(h, i);
-			if (h.find("Server") != h.end())
-				reqs[find_req(i)].set_name(h.find("Server")->second);
+			if (h.find("Host") != h.end())
+				reqs[find_req(i)].set_name(h.find("Host")->second);
 			reqs[find_req(i)].set_header(h);
+			// response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host(), reqs[find_req(i)].get_name()))));
+			// response[i]->generate_response();
+			// if (response[i]->get_code() == NOT_ALLOWED)
+			// 	set_status("Method Not Allowed", NOT_ALLOWED, i);
+			// Drop_Response(i);
 			int	j = 0;
-
 			for (; j < read_len; j++)
 				if (j + 3 < read_len && buff[j] == '\r' && buff[j + 1] == '\n' && buff[j + 2] == '\r' && buff[j + 3] == '\n')
 				{
@@ -381,9 +391,15 @@ void	server::post_cl(int fd, int j)
 	{
 		int	tmp;
 
-		open_file(fd);
 		std::stringstream(reqs[find_req(fd)].get_header()["Content-Length"]) >> tmp;
+		reqs[find_req(fd)].get_post().set_body_size(tmp);
+		if (reqs[find_req(fd)].get_post().get_body_size() > get_body_size(fd))
+		{
+			set_status("Payload Too Large", 413, fd);
+			return ;
+		}
 		reqs[find_req(fd)].get_post().set_i(tmp);
+		open_file(fd);
 	}
 	write(reqs[find_req(fd)].get_post().get_file(), &buff[j], reqs[find_req(fd)].get_post().get_bytes_read());
 	reqs[find_req(fd)].get_post().set_i(reqs[find_req(fd)].get_post().get_i() - reqs[find_req(fd)].get_post().get_bytes_read());
@@ -418,6 +434,12 @@ void	server::post_ch(int fd, int j)
 				reqs[find_req(fd)].get_post().set_bytes_read(reqs[find_req(fd)].get_post().get_bytes_read() - 1);
 				reqs[find_req(fd)].get_post().set_chunk_size(std::strtol(reqs[find_req(fd)].get_post().get_hex().c_str(), NULL, 16));
 				reqs[find_req(fd)].get_post().get_hex().clear();
+				reqs[find_req(fd)].get_post().set_body_size(reqs[find_req(fd)].get_post().get_body_size() + reqs[find_req(fd)].get_post().get_chunk_size());
+				if (reqs[find_req(fd)].get_post().get_body_size() > get_body_size(fd))
+				{
+					set_status("Payload Too Large", 413, fd);
+					return ;
+				}
 				if (!reqs[find_req(fd)].get_post().get_chunk_size())
 				{
 					close(reqs[find_req(fd)].get_post().get_file());
@@ -450,32 +472,7 @@ void	server::post_ch(int fd, int j)
 	}
 }
 
-void	server::open_file(int fd)
-{
-	std::string			file_name = "test";
-	
-	// std::srand(static_cast<unsigned int>(std::time(0)));
-	// static int			i = std::rand() % 10000;
-	// std::stringstream	ss0;
-
-	// ss0 << i;
-	// file_name += ss0.str();
-	// if (reqs[find_req(fd)].get_header().find("Content-Type") != reqs[find_req(fd)].get_header().end())
-	// {
-	// 	file_name += '.';
-	// 	std::stringstream	ss(reqs[find_req(fd)].get_header().find("Content-Type")->second);
-	// 	std::string			ex;
-
-	// 	getline(ss, ex, '/');
-	// 	getline(ss, ex);
-	// 	file_name += ex;
-	// }
-	// i++;
-	reqs[find_req(fd)].get_post().set_file(open(file_name.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0644));
-}
-
-
-ServerConfig& server::get_config(std::string &name, std::string &host)
+ServerConfig& server::get_config(std::string &host, std::string &name)
 {
 	std::vector<ServerConfig>& configs = config.getServers();
 	for (std::vector<ServerConfig>::iterator it = configs.begin(); it != configs.end(); ++it)
@@ -484,18 +481,18 @@ ServerConfig& server::get_config(std::string &name, std::string &host)
 		std::vector<std::string>::const_iterator it2;
 		for (it2 = it->getServerNames().cbegin(); it2 != it->getServerNames().cend(); ++it2)
 		{
-			std::cout << "it2 = " << *it2 << " name " << name << std::endl;
+			//std::cout << "it2 = " << *it2 << " name " << name << std::endl;
 			if (name == *it2)
 				return (*it);
 		}
 	}
 	for (std::vector<ServerConfig>::iterator it = configs.begin(); it != configs.end(); ++it)
 	{
-		std::cout << "host = " << host << " it->getHost() = " << it->getHost() << std::endl;
+		//std::cout << "host = " << host << " it->getHost() = " << it->getHost() << std::endl;
 		if ((it->getHost() + ":" + it->getPort()) == host)
 			return (*it);
 	}
-	std::cout << "here" << std::endl;
+	// std::cout << "here" << std::endl;
 	return (config.getServers()[0]);
 }
 
@@ -504,4 +501,41 @@ void	server::Drop_Response(int i)
 	response[i]->Drop_file();
 	delete response[i];
 	response.erase(i);
+}
+
+unsigned long	server::get_body_size(int fd)
+{
+	for (size_t i = 0; i < config.getServers().size(); i++)
+		for (size_t j = 0; j < config.getServers()[i].getServerNames().size(); j++)
+			if (config.getServers()[i].getServerNames()[j] == reqs[find_req(fd)].get_name())
+				return (config.getServers()[i].getMaxBodySize());
+	for (size_t i = 0; i < config.getServers().size(); i++)
+			if (config.getServers()[i].getHost() + ':' + config.getServers()[i].getPort() == reqs[find_req(fd)].get_host())
+				return (config.getServers()[i].getMaxBodySize());
+	return (0);
+}
+
+void	server::open_file(int fd)
+{
+	std::string			file_name = "test";
+	
+	std::srand(static_cast<unsigned int>(std::time(0)));
+	static int			i = std::rand() % 10000;
+	std::stringstream	ss0;
+
+	ss0 << i;
+	file_name += ss0.str();
+	if (reqs[find_req(fd)].get_header().find("Content-Type") != reqs[find_req(fd)].get_header().end())
+	{
+		file_name += '.';
+		std::stringstream	ss(reqs[find_req(fd)].get_header().find("Content-Type")->second);
+		std::string			ex;
+
+		getline(ss, ex, '/');
+		getline(ss, ex);
+		file_name += ex;
+	}
+	i++;
+	reqs[find_req(fd)].get_post().set_file_name(file_name);
+	reqs[find_req(fd)].get_post().set_file(open(file_name.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0644));
 }

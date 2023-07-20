@@ -7,7 +7,7 @@ std::string get_type(std::string file)
 	types.push_back("htm");
 	types.push_back("shtml");
 	types.push_back("css");
-	types.push_back("text");
+	types.push_back("txt");
 	types.push_back("jpeg");
 	types.push_back("jpg");
 	types.push_back("png");
@@ -80,8 +80,10 @@ std::string generate_error(short error)
 			return ("501 Not Implemented");
 		case FOUND:
 			return ("302 Found");	
-		case 502:
+		case BAD_GATEWAY:
 			return ("502 Bad Gateway");
+		case PAYLOAD_TOLARGE:
+			return ("413 Payload Too Large");	
 	}
 	return ("500 Internal Server Error");
 }

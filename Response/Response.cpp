@@ -7,7 +7,7 @@ Response::Response(request& req, const ServerConfig& config) : _req(req), _confi
 {
 	//std::cout << _req << std::endl;
 	req_uri = _req.get_uri();
-	std::cout << "\033[1;32mREQUEST: \033[0m" << req.get_uri() << std::endl;
+	//std::cout << "\033[1;32mREQUEST: \033[0m" << req.get_uri() << std::endl;
 	// std::cout << _req.get_fd() << " " << req_uri << std::endl;
 	status_code = _req.get_status_code();
 	// std::cout << "*****" << status_code << std::endl;
@@ -69,6 +69,11 @@ bool		Response::get_send_status()
 	return (this->_body_status);
 }
 
+int 		Response::get_code()
+{
+	return (this->status_code);
+}
+
 void	Response::handle_err(int err)
 {
 	const std::map<short, std::string>& err_pages = _config.getErrorPages();
@@ -96,6 +101,12 @@ void	Response::handle_err(int err)
 			this->_res += "/";
 		return ;
 	}
+	if (err == 201)
+	{
+		this->_head = "HTTP/1.1 " + error;
+		this->_res = this->_head + "\r\n\r\n";
+		return;
+	}
 	std::string error_page = "<!DOCTYPE html><html><body><center><h1>ERROR</h1><h1><font size=\"100\">" 
 	+ error.substr(0, 3) + "</font></h1><h1>" + error.substr(3, error.length()) + "</h1></center></body></html>";
 	this->_head = "HTTP/1.1 " + error.substr(0, 3) + "\r\nContent-Type: text/html\r\nContent-Length: " + std::to_string(error_page.size()) + "\r\n\r\n" + error_page;
@@ -106,7 +117,7 @@ void	Response::check_method(const std::vector<std::string>& methods)
 {
 	for (std::vector<std::string>::const_iterator it2 = methods.cbegin(); it2 != methods.cend(); ++it2)
 	{
-		std::cout <<  "it =" << *it2 << std::endl;
+		//std::cout <<  "it =" << *it2 << std::endl;
 		if (this->_method == *it2)
 		{
 			this->Allow_method = true;
@@ -115,7 +126,7 @@ void	Response::check_method(const std::vector<std::string>& methods)
 	}
 	if (this->_method != "POST" && this->_method != "DELETE" && this->_method != "GET")
 		throw 501;
-	std::cout << _method << std::endl;	
+	//std::cout << _method << std::endl;	
 	throw 405;
 }
 
@@ -186,10 +197,11 @@ void	Response::handle_dir(std::vector<Location>::const_iterator& it, std::string
 	}
 	if (it->getIndex() != "")
 	{
-		//std::cout << "catch1" << std::endl;
 		this->index = this->req_uri + "/" + it->getIndex();
 		if (access((this->index).c_str(), F_OK) != -1)
+		{
 			this->req_uri = this->index;
+		}
 		else if (it->getAutoIndex())
 		{
 			this->index_dir(_dir, this->req_uri);
@@ -216,33 +228,36 @@ void	Response::match()
 	const std::vector<Location>& Locations = config.getLocations();
 	std::string path;
 	std::string root;
+	std::string temp = "";
+	std::vector<Location>::const_iterator to_check;
 	for (std::vector<Location>::const_iterator it = Locations.cbegin(); it != Locations.cend(); ++it)
 	{
-		if (it->getPath() != this->req_uri.substr(0, it->getPath().length()))
-			continue;
-		if (it->getRedirect() != "")
+		if (it->getPath() == this->req_uri.substr(0, it->getPath().length()) && it->getPath().length() > temp.length())
 		{
-			redirect = true;
-			this->req_uri = it->getRedirect();
-			throw 302;
-		}	
-		std::string path1 = this->req_uri;	
-		root = it->getroot();
-		path = this->req_uri.substr(it->getPath().length(), this->req_uri.length());
-		while (path.substr(0, 3) == "../")
+			temp = it->getPath();
+			to_check = it;
+			//std::cout << "temp = " << temp << std::endl;
+		}
+	}
+	if (temp == "")
+		throw 404;	
+	std::string path1 = this->req_uri;	
+	root = to_check->getroot();
+	path = this->req_uri.substr(temp.length(), this->req_uri.length());
+	while (path.substr(0, 3) == "../")
 			path = path.substr(3);
-#if DEBUG
+	#if DEBUG
 
 		std::cout << "final = " << root + path << std::endl;
-		std::cout << "get path = " << it->getPath() << std::endl;
+		std::cout << "get path = " << to_check->getPath() << std::endl;
 		std::cout << "root = " << root << std::endl;
 		std::cout << "path = " << path << std::endl;
-		std::cout << "req sub = " << this->req_uri.substr(0, it->getPath().length()) << std::endl;
-#endif
+		std::cout << "req sub = " << this->req_uri.substr(0, to_check->getPath().length()) << std::endl;
+	#endif
 		if (access((root + path).c_str(), F_OK) == -1)
-			continue;	
+			throw 404;	
 		this->req_uri = root + path;
-		this->check_method(it->getMethods());
+		this->check_method(to_check->getMethods());
 		_dir = opendir(this->req_uri.c_str());
 		if (this->_method == "DELETE")
 		{
@@ -254,8 +269,8 @@ void	Response::match()
 			}	
 			return ;
 		}
-		if (_dir)
-			this->handle_dir(it, path1);
+		if (_dir && this->_method != "POST")
+			this->handle_dir(to_check, path1);
 		Drop_file();
 		_file.open(this->req_uri, std::ifstream::binary | std::ifstream::ate);
 		if (!_file.is_open())
@@ -265,8 +280,8 @@ void	Response::match()
 		{
 			Drop_file();
 			Cgi cgi(_req, req_uri);
-			status_code = cgi.execute_cgi();
-			std::cout << status_code << std::endl;
+			status_code = cgi.execute_cgi(_req.get_post().get_file_name());
+			//std::cout << status_code << std::endl;
 			if (status_code != 200)
 			{
 				std::cout << status_code << std::endl;
@@ -276,19 +291,26 @@ void	Response::match()
 			_cgi = true;
 			this->_head = set_head();
 			this->_res = cgi.getCgiResponse();
-			std::cout << this->_res;
+			//std::cout << this->_res;
 			this->_headers_status = true;
 			this->_body_status = true;
+			std::remove(_req.get_post().get_file_name().c_str());
 			return;
-		}	
+		}
+		else if (_method == "POST")
+		{
+		// 	std::cout << "new file name =" << _req.get_post().get_file_name() << std::endl;
+		// 	std::cout << "ana hna" << std::endl;
+			rename(_req.get_post().get_file_name().c_str(), (req_uri + "/" + _req.get_post().get_file_name()).c_str());
+			throw 201;	
+		}
 		else
 		{	
+			//std::cout << "chi 7ajjaaaa " << this->req_uri << std::endl;
 			this->_content_length = _file.tellg();
 			_file.seekg(0, std::ios::beg);
 			return ;	
-		}
-	}
-	throw 404;
+		}		
 }
 
 
@@ -317,6 +339,8 @@ void Response::generate_response()
 	}
 	catch(int err)
 	{
+		if (_method == "POST" && err != 201)
+			std::remove(_req.get_post().get_file_name().c_str());
 		this->status_code = err;
 		//std::cout << this->_head << std::endl;
 		_req.set_status_code(err);
@@ -329,16 +353,7 @@ void Response::generate_response()
 	{
 		//std::cout << "execption = " << std::endl;
 	}
-	if (_body_status)
-	{
-		if (status_code == 200)
-		{
-			std::cout << "\033[1;32mRESPONSE: \033[0m 200 OK"<< std::endl;;
-			//std::cout << " GET "<<_req.get_uri() << std::endl;
-		}
-		else
-			std::cout << "\033[31mRESPONSE: \033[0m" << generate_error(status_code) << std::endl;
-	}
+	//std::cout << "RESPONSE: " << this->_res << std::endl;
 }
 
 std::string Response::set_head()

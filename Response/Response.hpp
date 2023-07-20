@@ -13,8 +13,9 @@
 #include <cstdio>
 #include <ctime>
 #include "../cgi/cgi.hpp"
+#include <stdio.h>
 
-#define DEBUG true
+#define DEBUG false
 
 class Response {
 	protected :
@@ -64,6 +65,7 @@ class Response {
 		std::string		set_head();
 		std::ifstream& 	get_file();
 		void			Drop_file();
+		int				get_code();
 };
 
 enum
@@ -81,6 +83,8 @@ enum
 	LONG_URI = 414,
 	NOT_IMPLEM = 501,
 	FOUND = 302,
+	BAD_GATEWAY = 502,
+	PAYLOAD_TOLARGE = 413, 
 };
 
 
