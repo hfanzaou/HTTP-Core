@@ -20,8 +20,15 @@ void	Location::setPath(std::istringstream& lineStream)
 
 void	Location::setRoot(std::istringstream& lineStream)
 {
-	if (!(lineStream >> root) || (!lineStream.eof()) || (!opendir(root.c_str())))
+	DIR *dir = NULL;
+	if (!(lineStream >> root) || (!lineStream.eof()) || !(dir = opendir(root.c_str())))
+	{
+		if (dir)
+			closedir(dir);
 		throw std::runtime_error("Invalid location root");
+	}
+	if (dir)
+		closedir(dir);
 }
 
 void	Location::setIndex(std::istringstream& lineStream) {

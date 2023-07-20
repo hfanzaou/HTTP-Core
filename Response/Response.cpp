@@ -252,6 +252,14 @@ void	Response::match()
 	path = this->req_uri.substr(temp.length(), this->req_uri.length());
 	while (path.substr(0, 3) == "../")
 			path = path.substr(3);
+	if (access((root + path).c_str(), F_OK) == -1)
+	{
+		temp = Locations[0].getPath();
+		root = Locations[0].getroot();
+		path = this->req_uri.substr(temp.length(), this->req_uri.length());
+	}
+	if (access((root + path).c_str(), F_OK) == -1)
+		throw 404;				
 	#if DEBUG
 
 		std::cout << "final = " << root + path << std::endl;

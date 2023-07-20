@@ -22,7 +22,7 @@ CPP			= main.cpp \
 			  ConfigParse/ServerConfig.cpp \
 			  cgi/cgi.cpp Response/utils.cpp 
 CC			= c++
-CPPFLAGS	= -Wall -Wextra -Werror -fsanitize=address -g3
+CPPFLAGS	= -Wall -Wextra -Werror #-fsanitize=address -g3
 O			= $(CPP:.cpp=.o)
 RM			= rm -rf
 %.o			: %.cpp
