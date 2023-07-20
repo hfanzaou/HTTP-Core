@@ -240,7 +240,13 @@ void	Response::match()
 		}
 	}
 	if (temp == "")
-		throw 404;	
+		throw 404;
+	if (to_check->getRedirect() != "")
+	{
+		redirect = true;
+		this->req_uri = to_check->getRedirect();
+		throw 302;
+	}		
 	std::string path1 = this->req_uri;	
 	root = to_check->getroot();
 	path = this->req_uri.substr(temp.length(), this->req_uri.length());
