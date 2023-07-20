@@ -108,10 +108,6 @@ int Cgi::execute_cgi(std::string filename)
         }
         close(fd[0]);
     }
-    // for (size_t i = 0; i < _env.size() + 1; i++)
-    //     delete env[i];
-    // delete env;
-   // std::cout << "Cgi Response:\n" << cgi_response << std::endl;
     return 200;
 }
 
