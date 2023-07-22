@@ -44,9 +44,6 @@ class Response {
 		Response(request&, const ServerConfig&);
 		Response(const Response& );
 		virtual ~Response();
-		//Response& operator=(const Response& );
-
-
 
 		const 			ServerConfig&	get_servconfig() const;
 		size_t 			get_len() const;

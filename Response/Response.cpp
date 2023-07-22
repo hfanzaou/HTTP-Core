@@ -1,43 +1,16 @@
 #include "Response.hpp"
 #include <unistd.h>
-//std::ifstream Response::_file;
 
 Response::Response(request& req, const ServerConfig& config) : _req(req), _config(config), _method(req.get_method()),
 	_headers_status(false), _body_status(false), auto_index(false), _fd(req.get_fd()) , Allow_method(false), redirect(false), _cgi(false), _dir(NULL)
 {
-	//std::cout << _req << std::endl;
 	req_uri = _req.get_uri();
-	//std::cout << "\033[1;32mREQUEST: \033[0m" << req.get_uri() << std::endl;
-	// std::cout << _req.get_fd() << " " << req_uri << std::endl;
 	status_code = _req.get_status_code();
-	// std::cout << "*****" << status_code << std::endl;
 	c = 0;
 	this->_res = "";
-	//std::cout << "Constructor called" << std::endl;
 }
 
-
-// Response::Response(const Response& obj)
-// {
-// 	_req = request();
-// 	//std::cout << "Copy Constructor called" << std::endl;
-// 	*this = obj;
-// }
-
-// Response& Response::operator=(const Response& obj)
-// {
-// 	//std::cout << "Copy assignement constructor called" << std::endl;
-// 	if (this != &obj)
-// 	{
-// 		this->_config = obj.get_servconfig();
-// 	}
-// 	return (*this);
-// }
-
-Response::~Response()
-{
-	//std::cout << "Destructor called" << std::endl;
-}
+Response::~Response() {}
 
 const  ServerConfig&	Response::get_servconfig() const
 {
@@ -101,7 +74,7 @@ void	Response::handle_err(int err)
 			this->_res += "/";
 		return ;
 	}
-	if (err == 201)
+	if (err == 201 || err == 204)
 	{
 		this->_head = "HTTP/1.1 " + error;
 		this->_res = this->_head + "\r\n\r\n";
@@ -117,7 +90,6 @@ void	Response::check_method(const std::vector<std::string>& methods)
 {
 	for (std::vector<std::string>::const_iterator it2 = methods.cbegin(); it2 != methods.cend(); ++it2)
 	{
-		//std::cout <<  "it =" << *it2 << std::endl;
 		if (this->_method == *it2)
 		{
 			this->Allow_method = true;
@@ -126,7 +98,6 @@ void	Response::check_method(const std::vector<std::string>& methods)
 	}
 	if (this->_method != "POST" && this->_method != "DELETE" && this->_method != "GET")
 		throw 501;
-	//std::cout << _method << std::endl;	
 	throw 405;
 }
 
@@ -210,7 +181,6 @@ void	Response::handle_dir(std::vector<Location>::const_iterator& it, std::string
 	}
 	else if (it->getAutoIndex())
 	{
-		//std::cout << "catch2" << std::endl;
 		this->index_dir(_dir, this->req_uri);
 		this->auto_index = true;
 	}
@@ -224,7 +194,6 @@ void	Response::handle_dir(std::vector<Location>::const_iterator& it, std::string
 void	Response::match()
 {
 	const ServerConfig& config = Response::get_servconfig();
-	//std::cout << config.getHost() << std::endl;
 	const std::vector<Location>& Locations = config.getLocations();
 	std::string path;
 	std::string root;
@@ -236,7 +205,6 @@ void	Response::match()
 		{
 			temp = it->getPath();
 			to_check = it;
-			//std::cout << "temp = " << temp << std::endl;
 		}
 	}
 	if (temp == "")
@@ -295,17 +263,12 @@ void	Response::match()
 			Drop_file();
 			Cgi cgi(_req, req_uri);
 			status_code = cgi.execute_cgi(_req.get_post().get_file_name());
-			//std::cout << status_code << std::endl;
 			if (status_code != 200)
-			{
-				std::cout << status_code << std::endl;
 				throw status_code;
-			}
 			this->_content_length = cgi.getCgiResponse().length() - 29;
 			_cgi = true;
 			this->_head = set_head();
 			this->_res = cgi.getCgiResponse();
-			//std::cout << this->_res;
 			this->_headers_status = true;
 			this->_body_status = true;
 			std::remove(_req.get_post().get_file_name().c_str());
@@ -313,14 +276,13 @@ void	Response::match()
 		}
 		else if (_method == "POST")
 		{
-		// 	std::cout << "new file name =" << _req.get_post().get_file_name() << std::endl;
-		// 	std::cout << "ana hna" << std::endl;
+			if (_dir)
+				closedir(_dir);
 			rename(_req.get_post().get_file_name().c_str(), (req_uri + "/" + _req.get_post().get_file_name()).c_str());
 			throw 201;	
 		}
 		else
-		{	
-			//std::cout << "chi 7ajjaaaa " << this->req_uri << std::endl;
+		{
 			this->_content_length = _file.tellg();
 			_file.seekg(0, std::ios::beg);
 			return ;	
@@ -356,18 +318,13 @@ void Response::generate_response()
 		if (_method == "POST" && err != 201)
 			std::remove(_req.get_post().get_file_name().c_str());
 		this->status_code = err;
-		//std::cout << this->_head << std::endl;
 		_req.set_status_code(err);
 		_headers_status = true;
 		_body_status = true;
 		this->handle_err(err);
 		Drop_file();
 	}
-	catch(std::exception &e)
-	{
-		//std::cout << "execption = " << std::endl;
-	}
-	//std::cout << "RESPONSE: " << this->_res << std::endl;
+	catch(std::exception &e) {}
 }
 
 std::string Response::set_head()

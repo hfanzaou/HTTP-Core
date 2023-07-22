@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Config.cpp                                         :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
+/*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/05 16:41:53 by ajana             #+#    #+#             */
-/*   Updated: 2023/07/14 07:19:08 by ajana            ###   ########.fr       */
+/*   Updated: 2023/07/20 21:23:18 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -88,10 +88,8 @@ ServerConfig parseServerContext(std::string& context)
 		}
 		else if (token == "{" || token == "}" || token.empty())
 			continue ;
-		else {
-			std::cout << token << std::endl;
+		else
 			throw std::runtime_error("Invalid identifier inside server context!");
-		}
 	}
 	server.checkServer();
     return server;

@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.cpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
+/*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 22:26:31 by ajana             #+#    #+#             */
-/*   Updated: 2023/07/14 07:26:50 by ajana            ###   ########.fr       */
+/*   Updated: 2023/07/20 21:26:10 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -76,7 +76,6 @@ void	Location::checkLocation() const
 		throw std::runtime_error("Location root missing!");
 	else if (path.empty())
 		throw std::runtime_error("Location path missing!");
-	// else if (methods.)
 }
 
 const std::string&	Location::getPath() const { return path; }
@@ -105,6 +104,5 @@ void	Location::printLocation() const
 	std::cout << "	index: " << index << std::endl
 			  << "	root: " << root << std::endl
 			  << "	AutoIndex: " << auto_index << std::endl
-			  << "	Redirect: " << redirect << std::endl
-			  << "	Upload path: " << upload_path << std::endl;
+			  << "	Redirect: " << redirect << std::endl;
 }

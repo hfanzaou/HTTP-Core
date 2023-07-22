@@ -3,10 +3,10 @@
 /*                                                        :::      ::::::::   */
 /*   Location.hpp                                       :+:      :+:    :+:   */
 /*                                                    +:+ +:+         +:+     */
-/*   By: ajana <ajana@student.42.fr>                +#+  +:+       +#+        */
+/*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/08 21:59:13 by ajana             #+#    #+#             */
-/*   Updated: 2023/07/14 07:26:45 by ajana            ###   ########.fr       */
+/*   Updated: 2023/07/20 21:19:44 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -31,7 +31,6 @@ class Location
 		std::string					redirect;
 		std::string					upload_path;
 	public :
-		// Location();
 		void	setPath(std::istringstream& lineStream);
 		void	setRoot(std::istringstream& lineStream);
 		void	setIndex(std::istringstream& lineStream);

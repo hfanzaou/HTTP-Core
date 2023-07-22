@@ -6,7 +6,7 @@
 /*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:59 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/20 03:39:18 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/07/20 21:22:30 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -35,9 +35,7 @@ class server
 	private	:
 		std::string					hostname;
 		std::string					servname;
-		//
 		std::vector<std::string>	name;
-		//
 		struct addrinfo				hints;
 		struct addrinfo				*res;
 		std::vector<int>			sock_fd;
@@ -58,29 +56,30 @@ class server
 	public	:
 		server(Config &c);
 
-		void		init_server(ServerConfig &s);
-		void		start_server(void);
-		void		multiplex_server(void);
-		void		accept_server(int s);
-		bool		read_server(int i);
-		void		write_server(int i);
-		bool		parse_req(int i);
-		void		parse_req_line(int i);
-		void		set_status(const std::string &m, int s, int i);
-		int			parse_header(int i);
-		void		check_header(std::map<std::string, std::string> &h, int fd);
-		std::string	remove_r(std::string &s);
-		int			find_req(int i);
-		void		erase_req(int i);
-		void		post(int fd, int j);
-		void		drop_client(int i);
-		void		add_req(int s);
-		void		post_cl(int fd, int j);
-		void		post_ch(int fd, int j);
-		ServerConfig &get_config(std::string &host, std::string& name);
-		void		Drop_Response(int i);
-		void		open_file(int fd);
+		void			init_server(ServerConfig &s);
+		void			start_server(void);
+		void			multiplex_server(void);
+		void			accept_server(int s);
+		bool			read_server(int i);
+		void			write_server(int i);
+		bool			parse_req(int i);
+		void			parse_req_line(int i);
+		void			set_status(const std::string &m, int s, int i);
+		int				parse_header(int i);
+		void			check_header(std::map<std::string, std::string> &h, int fd);
+		std::string		remove_r(std::string &s);
+		int				find_req(int i);
+		void			erase_req(int i);
+		void			post(int fd, int j);
+		void			drop_client(int i);
+		void			add_req(int s);
+		void			post_cl(int fd, int j);
+		void			post_ch(int fd, int j);
+		ServerConfig	&get_config(std::string &host, std::string& name);
+		void			Drop_Response(int i);
+		void			open_file(int fd);
 		unsigned long	get_body_size(int fd);
+		std::string		get_ex(std::string e);
 };
 
 #endif

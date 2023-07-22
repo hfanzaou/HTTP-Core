@@ -3,10 +3,10 @@
 #                                                         :::      ::::::::    #
 #    Makefile                                           :+:      :+:    :+:    #
 #                                                     +:+ +:+         +:+      #
-#    By: hfanzaou <hfanzaou@student.42.fr>          +#+  +:+       +#+         #
+#    By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2023/06/09 22:12:40 by ebensalt          #+#    #+#              #
-#    Updated: 2023/07/20 00:48:20 by hfanzaou         ###   ########.fr        #
+#    Updated: 2023/07/20 18:51:13 by ebensalt         ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -22,7 +22,7 @@ CPP			= main.cpp \
 			  ConfigParse/ServerConfig.cpp \
 			  cgi/cgi.cpp Response/utils.cpp 
 CC			= c++
-CPPFLAGS	= -Wall -Wextra -Werror #-fsanitize=address -g3
+CPPFLAGS	= -Wall -Wextra -Werror -std=c++98 #-fsanitize=address -g3
 O			= $(CPP:.cpp=.o)
 RM			= rm -rf
 %.o			: %.cpp

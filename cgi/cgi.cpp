@@ -14,17 +14,22 @@ char    **Cgi::getEnv()
 {
     std::map<std::string, std::string>	headers = _req.get_header();
 
-    _env["SERVER_NAME"] = getHeaderValue(headers, "Host");
-    _env["SERVER_SOFTWARE"] = "WEBSERV/1.1";
-    _env["GATEWAY_INTERFACE"] = "CGI/1.1";
-    _env["QUERY_STRING"] = _req.get_query();
-    _env["HTTP_COOKIE"] = getHeaderValue(headers, "Cookie");
-    _env["PATH_INFO"] = _path;
+    _env["SERVER_PROTOCOL"] = "HTTP/1.1";
 	_env["REQUEST_METHOD"] = _req.get_method();
+	_env["PATH_INFO"] = _path;
+	_env["PATH_TRANSLATED"] = _path;
+	_env["SCRIPT_NAME"] = _path;
+	_env["QUERY_STRING"] = _req.get_query();
+	_env["REMOTE_HOST"] = getHeaderValue(headers, "User-Agent");
+	_env["REDIRECT_STATUS"] = "200";
+    _env["HTTP_ACCEPT_LANGUAGE"] = getHeaderValue(headers, "Accept-Language");
+    _env["HTTP_ACCEPT_CHARSET"] = getHeaderValue(headers, "Accept-Charset");
+    _env["CONTENT_LANGUAGE"] = getHeaderValue(headers, "Content-Language");
+    _env["HTTP_COOKIE"] = getHeaderValue(headers, "Cookie");
 	if (_req.get_method() == "POST")
 	{
-    	_env["CONTENT_LENGTH"] = headers["Content-Length"];
-		_env["CONTENT_TYPE"] = headers["Content-Type"];
+    	_env["CONTENT_LENGTH"] = getHeaderValue(headers, "Content-Length");
+		_env["CONTENT_TYPE"] = getHeaderValue(headers, "Content-Type");
 	}
 
     std::map<std::string, std::string>::iterator it;
@@ -65,9 +70,7 @@ int Cgi::execute_cgi(std::string filename)
 		dup2(fdin, 0);
         dup2(fd[1], 1);
         close(fd[1]);
-
-        char * const * nll = NULL;
-        execve(_path.c_str(), nll, env);
+        execve(_path.c_str(), nullptr, env);
         std::cerr << strerror(errno) << std::endl;
         exit(EXIT_FAILURE);
     }

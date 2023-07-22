@@ -6,7 +6,7 @@
 /*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/14 23:24:46 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/20 03:47:10 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/07/20 21:26:30 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -20,7 +20,6 @@ server::server(Config &c) : config(c)
 
 void	server::init_server(ServerConfig &s)
 {
-	(void)config;
 	hostname = s.getHost();
 	servname = s.getPort();
 	memset(&hints, 0, sizeof(hints));
@@ -94,7 +93,14 @@ void	server::multiplex_server(void)
 		if (select((nfds + 1), &tmp_r, &tmp_w, NULL, &tv) == -1)
 		{
 			std::cerr << "Error : select!" << std::endl;
-			return ;
+			FD_ZERO(&read);
+			FD_ZERO(&writ);
+			for (size_t tmp = 0; tmp < serv.size(); tmp++)
+			{
+				FD_SET(serv[tmp].get_fd(), &read);
+				FD_SET(serv[tmp].get_fd(), &writ);
+			}
+			continue ;
 		}
 		for (int i = 3; i <= nfds; i++)
 		{
@@ -115,11 +121,7 @@ void	server::multiplex_server(void)
 				if (it == sock_fd.size() && read_server(i))
 				{
 					if (this->response.find(i) != this->response.end())
-					{
-						//std::cout << "ok" <<std::endl;
 						Drop_Response(i);
-						//this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host(), reqs[find_req(i)].get_name()))));
-					}
 					FD_SET(i, &writ);
 				}
 			}
@@ -129,23 +131,25 @@ void	server::multiplex_server(void)
 				{
 					std::cout << "\033[1;32mREQUEST: \033[0m" << reqs[find_req(i)].get_method() << " " << reqs[find_req(i)].get_uri() << std::endl;
 					this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host(), reqs[find_req(i)].get_name()))));
-					//reqs[find_req(i)].print_all();
 				}
 				write_server(i);
 			}
+			else if (find_req(i) != -1 && reqs[find_req(i)].get_done())
+				drop_client(i);
 		}
 	}
 }
 
 void	server::accept_server(int s)
 {
-	std::cout << "\033[1;32mNEW CONECTION\033[0m" << std::endl;
+	std::cout << "\033[1;32mNEW CONECTION FROM ";
 	if ((acpt_fd = accept(s, (sockaddr *)&acpt_addr, (socklen_t *)&acpt_len)) == -1)
 	{
 		std::cerr << "Error : accept!" << std::endl;
 		return ;
 	}
 	add_req(s);
+	std::cout << reqs[find_req(acpt_fd)].get_host() << "\033[0m" << std::endl;
 }
 
 bool	server::read_server(int i)
@@ -154,10 +158,7 @@ bool	server::read_server(int i)
 	{
 		std::cerr << "Error : recv!" << std::endl;
 		if (this->response.find(i) != this->response.end())
-		{
 			Drop_Response(i);
-			//this->response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host()))));
-		}
 		drop_client(i);
 		return (false);
 	}
@@ -173,7 +174,7 @@ void	server::write_server(int i)
 {
 	response[i]->generate_response();
 	std::string res = response[i]->get_res();
-	if (send(i, res.c_str(), res.size(), 0) == -1)
+	if (send(i, res.c_str(), res.size(), 0) < 1)
 	{
 		std::cerr << "Error : send!" << std::endl;
 		drop_client(i);
@@ -186,9 +187,10 @@ void	server::write_server(int i)
 		else
 			std::cout << "\033[31mRESPONSE: \033[0m" << generate_error(response[i]->get_code()) << std::endl;
 		Drop_Response(i);
-		drop_client(i);
+		if (!reqs[find_req(i)].get_done())
+			reqs[find_req(i)].set_done(true);
+		FD_CLR(i, &writ);
 	}
-	// reqs[find_req(i)].print_all();
 }
 
 bool	server::parse_req(int i)
@@ -221,7 +223,7 @@ void	server::parse_req_line(int i)
 	std::string			h;
 
 	ss >> m >> u >> h;
-	if ((m != "GET" && m != "POST" && m != "DELETE") || h != "HTTP/1.1" || u.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/#[]@!$&'()*+,;=?") != std::string::npos)
+	if (h != "HTTP/1.1" || u.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~:/#[]@!$&'()*+,;=?") != std::string::npos)
 	{
 		set_status("Bad Request", 400, i);
 		return ;
@@ -287,12 +289,8 @@ int	server::parse_header(int i)
 			if (h.find("Host") != h.end())
 				reqs[find_req(i)].set_name(h.find("Host")->second);
 			reqs[find_req(i)].set_header(h);
-			// response.insert(std::pair<int, Response*>(i, new Response(reqs[find_req(i)], get_config(reqs[find_req(i)].get_host(), reqs[find_req(i)].get_name()))));
-			// response[i]->generate_response();
-			// if (response[i]->get_code() == NOT_ALLOWED)
-			// 	set_status("Method Not Allowed", NOT_ALLOWED, i);
-			// Drop_Response(i);
 			int	j = 0;
+
 			for (; j < read_len; j++)
 				if (j + 3 < read_len && buff[j] == '\r' && buff[j + 1] == '\n' && buff[j + 2] == '\r' && buff[j + 3] == '\n')
 				{
@@ -361,7 +359,6 @@ void	server::drop_client(int i)
 {
 	close(i);
 	FD_CLR(i, &read);
-	FD_CLR(i, &writ);
 	erase_req(i);
 }
 
@@ -398,6 +395,11 @@ void	server::post_cl(int fd, int j)
 			set_status("Payload Too Large", 413, fd);
 			return ;
 		}
+		else if (reqs[find_req(fd)].get_post().get_body_size() == 0)
+		{
+			set_status("No Content", 204, fd);
+			return ;
+		}
 		reqs[find_req(fd)].get_post().set_i(tmp);
 		open_file(fd);
 	}
@@ -415,7 +417,15 @@ void	server::post_cl(int fd, int j)
 void	server::post_ch(int fd, int j)
 {
 	if (reqs[find_req(fd)].get_post().get_file() == 0)
-		open_file(fd);
+	{
+		if (buff[j] != '0')
+			open_file(fd);
+		else
+		{
+			set_status("No Content", 204, fd);
+			return ;
+		}
+	}
 	for (;j < read_len; j++)
 		reqs[find_req(fd)].get_post().get_body().push_back(buff[j]);
 	if (!reqs[find_req(fd)].get_post().get_chunk_size())
@@ -477,22 +487,18 @@ ServerConfig& server::get_config(std::string &host, std::string &name)
 	std::vector<ServerConfig>& configs = config.getServers();
 	for (std::vector<ServerConfig>::iterator it = configs.begin(); it != configs.end(); ++it)
 	{
-		//std::cout << "host = " << host << " it->getHost() = " << it->getHost() << std::endl;
 		std::vector<std::string>::const_iterator it2;
 		for (it2 = it->getServerNames().cbegin(); it2 != it->getServerNames().cend(); ++it2)
 		{
-			//std::cout << "it2 = " << *it2 << " name " << name << std::endl;
-			if (name == *it2)
+			if (name.substr(0, it2->length()) == *it2)
 				return (*it);
 		}
 	}
 	for (std::vector<ServerConfig>::iterator it = configs.begin(); it != configs.end(); ++it)
 	{
-		//std::cout << "host = " << host << " it->getHost() = " << it->getHost() << std::endl;
 		if ((it->getHost() + ":" + it->getPort()) == host)
 			return (*it);
 	}
-	// std::cout << "here" << std::endl;
 	return (config.getServers()[0]);
 }
 
@@ -533,9 +539,19 @@ void	server::open_file(int fd)
 
 		getline(ss, ex, '/');
 		getline(ss, ex);
+		ex = get_ex(ex);
 		file_name += ex;
 	}
 	i++;
 	reqs[find_req(fd)].get_post().set_file_name(file_name);
 	reqs[find_req(fd)].get_post().set_file(open(file_name.c_str(), O_CREAT | O_TRUNC | O_WRONLY, 0644));
+}
+
+std::string	server::get_ex(std::string e)
+{
+	if (e == "plain")
+		return ("txt");
+	if (e == "javascript")
+		return ("js");
+	return (e);
 }

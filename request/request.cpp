@@ -6,13 +6,13 @@
 /*   By: ebensalt <ebensalt@student.42.fr>          +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2023/06/15 21:05:41 by ebensalt          #+#    #+#             */
-/*   Updated: 2023/07/20 00:39:33 by ebensalt         ###   ########.fr       */
+/*   Updated: 2023/07/20 10:45:13 by ebensalt         ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "request.hpp"
 
-request::request(int i, std::string &h) : msg("OK"), status_code(200), fd(i), req_l(false), req_h(false), req_b(true), host(h) {}
+request::request(int i, std::string &h) : msg("OK"), status_code(200), fd(i), req_l(false), req_h(false), req_b(true), host(h), done(false) {}
 
 request::~request(void) {}
 
@@ -159,4 +159,14 @@ int request::get_status_code(void)
 std::string	&request::get_host(void)
 {
 	return (host);
+}
+
+bool	request::get_done(void)
+{
+	return (done);
+}
+
+void	request::set_done(bool d)
+{
+	done = d;
 }
